@@ -2,7 +2,7 @@
 
 **Atomo:**
 
-argv[0] = NUM_ATOMICO
+argv[0] = NUM_ATOMIC
 
 argv[1] = msgid
 

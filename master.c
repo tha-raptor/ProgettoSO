@@ -95,7 +95,6 @@ int main(){
     union semun arg_simulazione;
     arg_simulazione.val = 0; //inizializzo semaforo simulazione a N_ATOMI_INIT + 3
     
-    printf("[master %d]\n", master_pid);
     if((semid = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
 
@@ -119,7 +118,9 @@ int main(){
     if(releaseSem(semid, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
     
+
     sleep(5);
+   
     if(semctl(semid, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_inizializzazione con IPC_RMID\n");
     //prima di rimuovere checko se tutti si identificano bene

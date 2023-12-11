@@ -10,7 +10,7 @@
 #define SIM_DURATION 10
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 5
+#define N_ATOMI_INIT 10
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
@@ -21,7 +21,7 @@
 
 
 //DECOMMENTATE (GABBO PROVA SE FUNZIONA STA COSA)
- //#if defined(__linux__)
+#if defined(__linux__)
 union semun{
     int val;
     struct semid_ds *buf;
@@ -30,7 +30,7 @@ union semun{
     struct seminfo *__buf;
     #endif
 }; 
-//#endif
+#endif
 
 
 struct msgbuf{

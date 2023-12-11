@@ -20,8 +20,10 @@ int main(int argc, char **argv){
     //inizializzazione atomo
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 0, mtext = getpid()
-    if( msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1)
+    if( msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1){
+        perror("Prova");
         err_exit("Msg snd identificazione\n");
+    }
 
     if(argv[2] > 0){
         int semid = atoi(argv[2]); //semid semaforo master (servirà sono nell'avvio della simulazione)
@@ -71,7 +73,6 @@ int main(int argc, char **argv){
     else{
         printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     }
-    
 
     exit(EXIT_SUCCESS);
 }

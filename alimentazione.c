@@ -25,7 +25,7 @@ int main(int argc, char **argv){
 
     pid_t parent_pid = getpid();
     pid_t child_pid;
-    for (int i = 100; i <= 5; i++) //creazione i max processi atomo, per gabbo: il 100 serve a non ciclare
+    /*for (int i = 100; i <= 5; i++) //creazione i max processi atomo, per gabbo: il 100 serve a non ciclare
     {
         sleep(2); 
         printf("\n[alimentazione %d] creo un atomo\n", getpid());
@@ -43,6 +43,6 @@ int main(int argc, char **argv){
                 err_exit("Exceve atomo");
         }
         //funzione uscita SEGNALE
-    }
+    }*/
     exit(EXIT_SUCCESS);
 }

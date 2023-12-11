@@ -14,7 +14,7 @@ compile:
 	gcc master.o libscissione.o -o master
 
 start:
-	./master
+	./master 
 	
 clean:
 	rm -f *.o

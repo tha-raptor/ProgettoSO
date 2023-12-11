@@ -16,6 +16,7 @@ int main(int argc, char **argv){
     int msgid = atoi(argv[1]);
     struct msgbuf msg_identificazione;
     printf("[pid(%d), NUM_ATOMICO: %d] [MSGID: %d]\n", getpid(), NUM_ATOMICO, msgid);
+    
     //inizializzazione atomo
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 0, mtext = getpid()

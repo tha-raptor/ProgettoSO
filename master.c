@@ -13,11 +13,10 @@ extern void err_exit(char *);
 
 
 void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
-    char *semidChar;
+    char *semidChar = (char *)malloc(sizeof(char) * 11); //inizializzazione malloc(?)
     sprintf(semidChar, "%d", semid);
     char *envp[] = {NULL};
     char *argvNull[2] = {semidChar, NULL};
-
      switch(fork()){ //creazione attivatore
         case -1:
             err_exit("Fork attivatore");
@@ -41,11 +40,14 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
             execve("./inibitore", argvNull, envp);
             err_exit("Exceve inibitore");
     }
-    char **argvAtomo = (char **)malloc(sizeof(char*) * 3); 
+    
+    char **argvAtomo = (char **)malloc(sizeof(char*) * 4); 
     char *argv_semid = (char*)malloc(sizeof(char) * 20);
     sprintf(argv_semid, "%d", semid);
-     char *argv_msgid = (char*)malloc(sizeof(char) * 20);
-    sprintf(argv_msgid, "%d", msgid);
+
+    char *argv_msgid = (char*)malloc(sizeof(char) * 20); 
+    snprintf(argv_msgid,20, "%d", msgid);
+
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
         srand((unsigned int) i + 1); // setto il seed
@@ -60,13 +62,20 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
                 argvAtomo[0] = NUM_ATOMICO;
                 argvAtomo[1] = argv_msgid;
                 argvAtomo[2] = argv_semid;
+                argvAtomo[3]=(char*)NULL;
                 execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
-                err_exit("Exceve atomo");
+                err_exit("Exceve atomo\n");
+                
         }
     }
-    free(argvAtomo);
-    free(NUM_ATOMICO);
+    free(semidChar);
     free(argv_semid);
+    free(argv_msgid);
+    free(NUM_ATOMICO);
+    free(argvAtomo);
+    
+   
+    
 }
 
 void print_stats(){
@@ -87,7 +96,6 @@ int main(){
     arg_simulazione.val = 0; //inizializzo semaforo simulazione a N_ATOMI_INIT + 3
     
     printf("[master %d]\n", master_pid);
-
     if((semid = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
 
@@ -115,7 +123,9 @@ int main(){
     if(semctl(semid, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_inizializzazione con IPC_RMID\n");
     //prima di rimuovere checko se tutti si identificano bene
+    
     struct msgbuf lettura_identificazione;
+
     int error_msgrcv;
     printf("------MESSAGGI------");
    

@@ -34,8 +34,7 @@ int main(int argc, char **argv){
     pid_t child_pid;
     int counter_creazione = 0;
 
-    for (; ;)
-    {
+    for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI
             printf("\n[alimentazione %d] creo un atomo\n", getpid());

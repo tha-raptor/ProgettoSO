@@ -14,8 +14,6 @@ extern void err_exit(char *);
 int main(int argc, char **argv){
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
-    struct msgbuf msg_identificazione;
-    printf("[pid(%d), NUM_ATOMICO: %d] [MSGID: %d]\n", getpid(), NUM_ATOMICO, msgid);
     
     if(argv[2] != NULL){
         int semid = atoi(argv[2]); //semid semaforo master (servirà solo nell'avvio della simulazione)
@@ -29,7 +27,9 @@ int main(int argc, char **argv){
         printf("[atomo] inizio anche io simulazione\n");
     }
 
-    //inizializzazione atomo
+    struct msgbuf msg_identificazione;
+    printf("[pid(%d), NUM_ATOMICO: %d] [MSGID: %d]\n", getpid(), NUM_ATOMICO, msgid);
+
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
     if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1)

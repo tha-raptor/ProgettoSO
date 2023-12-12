@@ -9,7 +9,7 @@ extern void err_exit(char *);
 int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
-
+    int shmid = atoi(argv[2]);
     //manuale linux
     struct timespec sleep_time;
     sleep_time.tv_sec = 0;          // secondi
@@ -17,10 +17,10 @@ int main(int argc, char **argv){
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem\n");
-     printf("[alimentazione %d] ho inizializzato, aspetto...\n", getpid());
+    //printf("[alimentazione %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione\n");
-    printf("[alimentazione] inizio anche io simulazione\n");
+    //printf("[alimentazione] inizio anche io simulazione\n");
 
     char *envp[] = {NULL};
     char **argvAtomo = (char **)malloc(sizeof(char*) * 3); 
@@ -28,6 +28,8 @@ int main(int argc, char **argv){
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 20);
     sprintf(argv_msgid, "%d", msgid);
+    char *argv_shmid = (char*)malloc(sizeof(char) * 20);
+    sprintf(argv_shmid, "%d", shmid);
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
 
     pid_t parent_pid = getpid();
@@ -48,7 +50,8 @@ int main(int argc, char **argv){
                     sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX
                     argvAtomo[0] = NUM_ATOMICO;
                     argvAtomo[1] = argv_msgid;
-                    argvAtomo[2] = (char *)NULL;
+                    argvAtomo[2] = argv_shmid;
+                    argvAtomo[3] = (char *)NULL;
                     execve("./atomo", argvAtomo, envp); //argv[0] = NUM_ATOMICO, argv[1] = msgid, envp = NULL
                     err_exit("Exceve atomo");
             }

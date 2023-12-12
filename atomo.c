@@ -83,22 +83,25 @@ int main(int argc, char **argv){
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione\n");
         //fine inizializzazione
-        printf("[atomo] ho inizializzato, aspetto...\n");
+        //printf("[atomo] ho inizializzato, aspetto...\n");
         //inizio simulazione
         if(reserveSem(semid, 1, 1, 2) == -1)
             err_exit("reserveSem simulazione\n");
-        printf("[atomo] inizio anche io simulazione\n");
+        //printf("[atomo] inizio anche io simulazione\n");
     }
+    struct stat_scissione *scissioni =  (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
+    scissioni[0].attivazioni += 1;
+    //printf("[pid(%d), NUM_ATOMICO: %d] [SHMID: %d]\n", getpid(), NUM_ATOMICO, shmid);
 
-    printf("[pid(%d), NUM_ATOMICO: %d] [SHMID: %d]\n", getpid(), NUM_ATOMICO, shmid);
-    struct msgbuf msg_identificazione;
+    /*struct msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
+
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
     if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1)
-        err_exit("Msg snd identificazione\n");
+        err_exit("Msg snd identificazione\n");*/
 
-    struct stat_scissione *scissioni =  (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
+   
     //da commentare perchè andrà in handler
     int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
     int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
@@ -128,17 +131,20 @@ int main(int argc, char **argv){
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         switch(fork()){
             case -1:
-                err_exit("Fork atomo");
+                err_exit("fork atomo\n");
             case 0:
                 execve("./atomo", argv_figlio_1, envp);
                 err_exit("Errore execve atomo figlio 1\n");
             default:
+                scissioni[1].scissioni++;
+                scissioni[1].energia_prodotta += energy(num_atomico_figlio_1, num_atomico_figlio_2);
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }
     }
     else{
-        printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
+        scissioni[1].scorie++;
+        //printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     }
 
     exit(EXIT_SUCCESS);

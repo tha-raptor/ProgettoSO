@@ -14,10 +14,10 @@ int main(int agrc, char **argv){
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem\n");
-    printf("[attivatore %d] ho inizializzato, aspetto...\n", getpid());
+    //printf("[attivatore %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione\n");
-    printf("[attivatore] inizio anche io simulazione\n");
+    //printf("[attivatore] inizio anche io simulazione\n");
 
     struct msgbuf lettura_identificazione;
     int error_msgrcv;

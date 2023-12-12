@@ -75,9 +75,34 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
 }
 
 void print_stats(struct stat_scissione *scissioni){
-    printf("---STAT---\n");
-    printf("attivazioni [0]: %d\n", scissioni[0].attivazioni);
-    printf("attivazioni [1]: %d\n", scissioni[1].attivazioni);
+    printf("\n---STATS RELATIVE---\n");
+    printf("attivazioni: %d\n", scissioni[1].attivazioni);
+    printf("scorie: %d\n", scissioni[1].scorie);
+    printf("energia prodotta: %d\n", scissioni[1].energia_prodotta);
+    printf("energia consumata: %d\n", scissioni[1].energia_consumata);
+    printf("scissioni: %d\n", scissioni[1].scissioni);
+    
+    scissioni[0].attivazioni += scissioni[1].attivazioni;
+    scissioni[0].scorie += scissioni[1].scorie;
+    scissioni[0].attivazioni += scissioni[1].attivazioni;
+    scissioni[0].energia_prodotta += scissioni[1].energia_prodotta;
+    scissioni[0].energia_consumata += scissioni[1].energia_consumata;
+
+    printf("\n---STATS ASSOLUTE---\n");
+    printf("attivazioni: %d\n", scissioni[0].attivazioni);
+    printf("scorie: %d\n", scissioni[0].scorie);
+    printf("energia prodotta: %d\n", scissioni[0].energia_prodotta);
+    printf("energia consumata: %d\n", scissioni[0].energia_consumata);
+    printf("scissioni: %d\n", scissioni[0].scissioni);
+
+    
+    //azzero le stats relative
+    scissioni[1].attivazioni = 0;
+    scissioni[1].energia_consumata = 0;
+    scissioni[1].energia_prodotta = 0;
+    scissioni[1].scorie = 0;
+    scissioni[1].scissioni = 0;
+    
 }
 
 int main(){
@@ -91,7 +116,6 @@ int main(){
     if((semid = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
 
-
     if(semctl(semid, 0, SETVAL, arg_inizializzazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL\n");
     
@@ -101,17 +125,17 @@ int main(){
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget");
 
-    struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, SHM_RDONLY);
+    struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
     scissioni[0].energia_prodotta = 0;
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
-    scissioni[1].attivazioni = 1;
-    scissioni[1].energia_consumata = 1;
-    scissioni[1].energia_prodotta = 1;
-    scissioni[1].scissioni = 1;
-    scissioni[1].scorie = 1;
+    scissioni[1].attivazioni = 0;
+    scissioni[1].energia_consumata = 0;
+    scissioni[1].energia_prodotta = 0;
+    scissioni[1].scissioni = 0;
+    scissioni[1].scorie = 0;
 
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
@@ -122,14 +146,15 @@ int main(){
     if(reserveSem(semid, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem\n");
 
-    printf("\n[master %d] fine inizializzazione, inizia la simulazione\n", getpid());
+    //printf("\n[master %d] fine inizializzazione, inizia la simulazione\n", getpid());
     //inizio simulzione
     if(releaseSem(semid, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
-    sleep(5);
-
-    print_stats(scissioni);
+    for(; ;){
+        print_stats(scissioni);
+        sleep(1);
+    }
    
     if(semctl(semid, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_inizializzazione con IPC_RMID\n");

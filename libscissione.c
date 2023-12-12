@@ -1,4 +1,5 @@
 #include <sys/sem.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -33,4 +34,21 @@ void err_exit(char* s){
 int energy(int n1, int n2){
     int max = n1 > n2 ? n1 : n2;
     return n1 * n2 - max;
+}
+
+void print_errshmat(){
+    switch(errno){
+        case EACCES:
+            printf("\nEACCES :%d", errno);
+            exit(EXIT_FAILURE);
+        case EINVAL:
+             printf("\nEINVAL: %d", errno);
+            exit(EXIT_FAILURE);
+        case EMFILE:
+             printf("\nEMFILE: %d", errno);
+            exit(EXIT_FAILURE);
+        case ENOMEM:
+            printf("\nENOMEM%d", errno);
+            exit(EXIT_FAILURE);
+    }
 }

@@ -10,7 +10,7 @@
 #define SIM_DURATION 10
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 1
+#define N_ATOMI_INIT 2
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
@@ -36,5 +36,15 @@ union semun{
 struct msgbuf{
     long mtype;
     char mtext[MSG_SIZE_IDENT];
+};
+
+struct stat_scissione{
+    int attivazioni;
+    int scissioni;
+    int energia_prodotta;
+    int energia_consumata;
+    int scorie;
+    //int energia_assorbita; //da inibitore
+    //int log_inibitore; //da inibitore
 };
 //----------------------

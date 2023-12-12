@@ -34,8 +34,8 @@ int main(int argc, char **argv){
     pid_t child_pid;
     int counter_creazione = 0;
 
-    for (; ;) {
-        nanosleep(&sleep_time, NULL);  //ogni STEP_NANO
+    /*for (; ;) {
+        nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI
             printf("\n[alimentazione %d] creo un atomo\n", getpid());
             srand((unsigned int) counter_creazione + 1); // setto il seed
@@ -54,6 +54,7 @@ int main(int argc, char **argv){
             }
         }
         counter_creazione = 0; //azzero -> pronto a ricreare altri N_NUOVI_ATOMI
-    }
+    }*/
+    
     exit(EXIT_SUCCESS);
 }

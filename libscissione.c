@@ -22,7 +22,6 @@ int releaseSem(int semid, int semNum, int semOperation, int numSemafori){
         sops[i].sem_op = (i == semNum) ? semOperation : 0;
         sops[i].sem_flg = 0;
    }
-
     return semop(semid, sops, numSemafori);
 }
 
@@ -31,3 +30,7 @@ void err_exit(char* s){
     exit(EXIT_FAILURE);
 }
 
+int energy(int n1, int n2){
+    int max = n1 > n2 ? n1 : n2;
+    return n1 * n2 - max;
+}

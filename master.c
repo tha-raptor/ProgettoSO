@@ -13,15 +13,17 @@ extern void err_exit(char *);
 
 
 void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
-    char *semidChar = (char *)malloc(sizeof(char) * 11); //inizializzazione malloc(?)
-    sprintf(semidChar, "%d", semid);
+    char *argv_semid = (char *)malloc(sizeof(char) * 11); //inizializzazione malloc(?)
+    sprintf(argv_semid, "%d", semid);
+    char *argv_msgid = (char*)malloc(sizeof(char) * 20); 
+    sprintf(argv_msgid, "%d", msgid);
     char *envp[] = {NULL};
-    char *argvNull[2] = {semidChar, NULL};
+    char *argv_semmsg[3] = {argv_semid, argv_msgid, NULL};
      switch(fork()){ //creazione attivatore
         case -1:
             err_exit("Fork attivatore");
         case 0:
-            execve("./attivatore", argvNull, envp);
+            execve("./attivatore", argv_semmsg, envp);
             err_exit("Exceve attivatore");
     }
     
@@ -29,7 +31,7 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
         case -1:
             err_exit("Fork attivatore");
         case 0:
-            execve("./alimentazione", argvNull, envp);
+            execve("./alimentazione", argv_semmsg, envp);
             err_exit("Exceve alimentazione");
     }
 
@@ -37,16 +39,11 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
         case -1:
             err_exit("Fork attivatore");
         case 0:
-            execve("./inibitore", argvNull, envp);
+            execve("./inibitore", argv_semmsg, envp);
             err_exit("Exceve inibitore");
     }
     
     char **argvAtomo = (char **)malloc(sizeof(char*) * 4); 
-    char *argv_semid = (char*)malloc(sizeof(char) * 20);
-    sprintf(argv_semid, "%d", semid);
-
-    char *argv_msgid = (char*)malloc(sizeof(char) * 20); 
-    snprintf(argv_msgid,20, "%d", msgid);
 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
@@ -68,14 +65,10 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid){
                 
         }
     }
-    free(semidChar);
     free(argv_semid);
     free(argv_msgid);
     free(NUM_ATOMICO);
     free(argvAtomo);
-    
-   
-    
 }
 
 void print_stats(){
@@ -117,7 +110,6 @@ int main(){
     //inizio simulzione
     if(releaseSem(semid, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
-    
 
     sleep(5);
    

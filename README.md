@@ -20,6 +20,8 @@ argv[0] = semid
 
 argv[0] = semid
 
+argv[1] = msgid (deve poi passarlo agli atomi così come master)
+
 **IDEA CODA DI MESSAGGI ATOMO**
 
 L'idea è che gli atomi alla loro creazione si identificano in una coda di messaggi dove l'attivatore dirà agli atomi presenti in coda di dividersi. Prendendo i messaggi dalla coda attivatore la **svuoterà anche immediatamente**.

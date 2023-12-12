@@ -10,14 +10,15 @@
 #define SIM_DURATION 10
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 10
+#define N_ATOMI_INIT 1
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
 #define ENERGY_DEMAND 15
-#define STEP_NANO 0.000000999 //999 nanosecondi -> 0.000000999 secondi
+#define STEP_NANO 900000000 //0.9 secondi
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
+#define N_NUOVI_ATOMI 1
 
 
 //DECOMMENTATE (GABBO PROVA SE FUNZIONA STA COSA)
@@ -31,7 +32,6 @@ union semun{
     #endif
 }; 
 #endif
-
 
 struct msgbuf{
     long mtype;

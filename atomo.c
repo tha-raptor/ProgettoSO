@@ -17,16 +17,8 @@ int main(int argc, char **argv){
     struct msgbuf msg_identificazione;
     printf("[pid(%d), NUM_ATOMICO: %d] [MSGID: %d]\n", getpid(), NUM_ATOMICO, msgid);
     
-    //inizializzazione atomo
-    sprintf(msg_identificazione.mtext, "%d", getpid());
-    msg_identificazione.mtype = 1; //tutti gli atomi mtype = 0, mtext = getpid()
-    if( msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1){
-        perror("Prova");
-        err_exit("Msg snd identificazione\n");
-    }
-
-    if(argv[2] > 0){
-        int semid = atoi(argv[2]); //semid semaforo master (servirà sono nell'avvio della simulazione)
+    if(argv[2] != NULL){
+        int semid = atoi(argv[2]); //semid semaforo master (servirà solo nell'avvio della simulazione)
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione\n");
         //fine inizializzazione
@@ -36,7 +28,13 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione\n");
         printf("[atomo] inizio anche io simulazione\n");
     }
-   
+
+    //inizializzazione atomo
+    sprintf(msg_identificazione.mtext, "%d", getpid());
+    msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
+    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1)
+        err_exit("Msg snd identificazione\n");
+
     int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
     int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
     char *num_a1_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
@@ -44,14 +42,14 @@ int main(int argc, char **argv){
     char *num_a2_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
     sprintf(num_a2_char, "%d", num_atomico_figlio_2);
     char *msgid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
-    sprintf(msgid_char, "%d", msgid); //check se è inizializzato
+    sprintf(msgid_char, "%d", msgid);
 
     char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 3);
     char **argv_figlio_2 = (char**)malloc(sizeof(char*) * 3);
     argv_figlio_1[0] = num_a1_char;
     argv_figlio_1[1] = msgid_char;
     argv_figlio_1[2] = NULL;
-    argv_figlio_1[0] = num_a1_char;
+    argv_figlio_2[0] = num_a2_char;
     argv_figlio_2[1] = msgid_char;
     argv_figlio_2[2] = NULL;
 

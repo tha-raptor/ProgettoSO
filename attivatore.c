@@ -17,17 +17,16 @@ int main(int agrc, char **argv){
     //printf("[attivatore %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione\n");
-    //printf("[attivatore] inizio anche io simulazione\n");
+    printf("[attivatore] inizio anche io simulazione\n");
 
     struct msgbuf lettura_identificazione;
     int error_msgrcv;
 
-    
     for(; ;){
-        sleep(2);
+        sleep(1);
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
-            printf("Manderò SIGINT A %d", atoi(lettura_identificazione.mtext));
-            kill(atoi(lettura_identificazione.mtext), SIGINT);
+            printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+            kill(atoi(lettura_identificazione.mtext), SIGUSR1);
             //print_msg_indentificazioni(&lettura_identificazione);
         }
         if(error_msgrcv == -1){ //se ha dato errore la msgrcv
@@ -35,7 +34,6 @@ int main(int agrc, char **argv){
                 err_exit("failure msgrcv"); //esci
         }
     }
-    
 
     exit(EXIT_SUCCESS);
 }

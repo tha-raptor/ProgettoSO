@@ -18,7 +18,7 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 20); 
     sprintf(argv_msgid, "%d", msgid);
-     char *argv_shmid = (char*)malloc(sizeof(char) * 20); 
+    char *argv_shmid = (char*)malloc(sizeof(char) * 20); 
     sprintf(argv_shmid, "%d", shmid);
     char *envp[] = {NULL};
     char *argv_processi[4] = {argv_semid, argv_msgid, argv_shmid, NULL};
@@ -45,7 +45,9 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
             execve("./inibitore", argv_processi, envp);
             err_exit("Exceve inibitore");
     }
-
+    int init = 0;
+    char *argv_inizializzazione = (char*)malloc(sizeof(char) * 10); 
+    sprintf(argv_inizializzazione, "%d", init);
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
@@ -62,7 +64,8 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
                 argvAtomo[1] = argv_msgid;
                 argvAtomo[2] = argv_shmid;
                 argvAtomo[3] = argv_semid;
-                argvAtomo[4]= NULL;
+                argvAtomo[4] = argv_inizializzazione;
+                argvAtomo[5]= NULL;
                 execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
                 err_exit("Exceve atomo\n");
                 
@@ -74,7 +77,8 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
     free(argvAtomo);
 }
 
-void print_stats(struct stat_scissione *scissioni){
+void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
+
     printf("\n---STATS RELATIVE---\n");
     printf("attivazioni: %d\n", scissioni[1].attivazioni);
     printf("scorie: %d\n", scissioni[1].scorie);
@@ -94,7 +98,6 @@ void print_stats(struct stat_scissione *scissioni){
     printf("energia prodotta: %d\n", scissioni[0].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[0].energia_consumata);
     printf("scissioni: %d\n", scissioni[0].scissioni);
-
     
     //azzero le stats relative
     scissioni[1].attivazioni = 0;
@@ -102,25 +105,25 @@ void print_stats(struct stat_scissione *scissioni){
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scorie = 0;
     scissioni[1].scissioni = 0;
-    
 }
 
 int main(){
     pid_t master_pid = getpid(), child_pid;
-    int semid, msgid, shmid; //semid semafoto master
-    union semun arg_inizializzazione;
+    int semid_isimulaz, msgid, shmid; //semid semafoto master
+    union semun arg_simulazione, arg_inizializzazione,  arg_stats;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
-    union semun arg_simulazione;
-    arg_simulazione.val = 0; //inizializzo semaforo simulazione a N_ATOMI_INIT + 3
-    
-    if((semid = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
+    arg_simulazione.val = 0;
+    arg_stats.val = 1;
+    if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
-
-    if(semctl(semid, 0, SETVAL, arg_inizializzazione) == -1) //inizializzo semaforo inizializzazzione a 0
-        err_exit("semctl con SETVAL\n");
     
-    if(semctl(semid, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
-        err_exit("semctl con SETVAL\n");
+    //printf("[master] semid: %d", semid_isimulaz);
+
+    if(semctl(semid_isimulaz, 0, SETVAL, arg_inizializzazione) == -1) //inizializzo semaforo inizializzazzione a 0
+        err_exit("semctl con SETVAL su semid_isimulaz\n");
+    
+    if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
+        err_exit("semctl con SETVAL su semid_isimulaz\n");
 
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget");
@@ -140,26 +143,30 @@ int main(){
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
 
-    init_processi(master_pid, child_pid, semid, msgid, shmid); //inizializza tutti i processi
+    init_processi(master_pid, child_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
 
     int semaph_operation = N_ATOMI_INIT + 3;
-    if(reserveSem(semid, 0, semaph_operation, 2) == -1)
+    if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem\n");
 
-    //printf("\n[master %d] fine inizializzazione, inizia la simulazione\n", getpid());
+    printf("\n[master %d] fine inizializzazione, inizia la simulazione\n", getpid());
     //inizio simulzione
-    if(releaseSem(semid, 1, semaph_operation, 2) == -1)
+    if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
-    for(int i=0;i<3;i++){
-        print_stats(scissioni);
+    /*for(int i = 0;i < SIM_DURATION ;i++){
+        print_stats(scissioni, semid_isimulaz);
         sleep(1);
-    }
-   
-    if(semctl(semid, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
-        err_exit("remove semid_inizializzazione con IPC_RMID\n");
-    //prima di rimuovere checko se tutti si identificano bene
+    }*/
     
+    printf("[master] aspetto e dealloco tutto\n");
+    //sleep(10);
+    //prima di rimuovere checko se tutti si identificano bene*/
+    //printf("[master] SIM_DURATION iteraz, aspetto...\n");
+    sleep(10);
+    if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
+        err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
+
     if(msgctl(msgid, IPC_RMID, NULL) == -1) //elimino la coda di messaggi
         err_exit("remove msg_identificazine con IPC_RMID\n");
 

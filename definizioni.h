@@ -10,7 +10,7 @@
 #define SIM_DURATION 10
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 20
+#define N_ATOMI_INIT 3
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
@@ -21,7 +21,7 @@
 #define N_NUOVI_ATOMI 1
 
 
-//DECOMMENTATE (GABBO PROVA SE FUNZIONA STA COSA)
+//Dichiarazione semun MacOS-VM
 #if defined(__linux__)
 union semun{
     int val;

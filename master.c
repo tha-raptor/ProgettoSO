@@ -45,7 +45,7 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
             execve("./inibitore", argv_processi, envp);
             err_exit("Exceve inibitore");
     }
-    
+
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
@@ -62,7 +62,7 @@ void init_processi(pid_t parent_pid, pid_t child_pid, int semid, int msgid, int 
                 argvAtomo[1] = argv_msgid;
                 argvAtomo[2] = argv_shmid;
                 argvAtomo[3] = argv_semid;
-                argvAtomo[4]=(char*)NULL;
+                argvAtomo[4]= NULL;
                 execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
                 err_exit("Exceve atomo\n");
                 
@@ -84,7 +84,7 @@ void print_stats(struct stat_scissione *scissioni){
     
     scissioni[0].attivazioni += scissioni[1].attivazioni;
     scissioni[0].scorie += scissioni[1].scorie;
-    scissioni[0].attivazioni += scissioni[1].attivazioni;
+    scissioni[0].scissioni += scissioni[1].scissioni;
     scissioni[0].energia_prodotta += scissioni[1].energia_prodotta;
     scissioni[0].energia_consumata += scissioni[1].energia_consumata;
 
@@ -151,7 +151,7 @@ int main(){
     if(releaseSem(semid, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
-    for(; ;){
+    for(int i=0;i<3;i++){
         print_stats(scissioni);
         sleep(1);
     }

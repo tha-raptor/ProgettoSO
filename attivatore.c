@@ -22,7 +22,7 @@ int main(int agrc, char **argv){
     struct msgbuf lettura_identificazione;
     int error_msgrcv;
 
-    /*
+    
     for(; ;){
         sleep(2);
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
@@ -35,7 +35,7 @@ int main(int agrc, char **argv){
                 err_exit("failure msgrcv"); //esci
         }
     }
-    */
+    
 
     exit(EXIT_SUCCESS);
 }

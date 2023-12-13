@@ -90,7 +90,7 @@ int main(int argc, char **argv){
         //printf("[atomo] inizio anche io simulazione\n");
     }
     struct stat_scissione *scissioni =  (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
-    scissioni[0].attivazioni += 1;
+    scissioni[1].attivazioni += 1;
     //printf("[pid(%d), NUM_ATOMICO: %d] [SHMID: %d]\n", getpid(), NUM_ATOMICO, shmid);
 
     /*struct msgbuf msg_identificazione;
@@ -144,7 +144,7 @@ int main(int argc, char **argv){
     }
     else{
         scissioni[1].scorie++;
-        //printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
+        printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     }
 
     exit(EXIT_SUCCESS);

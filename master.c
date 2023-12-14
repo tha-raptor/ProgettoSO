@@ -159,11 +159,11 @@ int main(){
         sleep(1);
     }*/
     
-    printf("[master] aspetto e dealloco tutto\n");
-    //sleep(10);
-    //prima di rimuovere checko se tutti si identificano bene*/
-    //printf("[master] SIM_DURATION iteraz, aspetto...\n");
     sleep(10);
+    printf("[master] aspetto e dealloco tutto\n");
+
+    //printf("[master] SIM_DURATION iteraz, aspetto...\n");
+    
     if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
 

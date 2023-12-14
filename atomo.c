@@ -32,7 +32,7 @@ int main(int argc, char **argv){
     sa.sa_handler = &handler_fork;
     sa.sa_flags = 0;
 
-    printf("[atomo] NUM_ATOMICO: %d\n", NUM_ATOMICO);
+    printf("[atomo] NUM_ATOMICO: %d\n", NUM_ATOMICO); //GROUP PID: getpgid(getpid() check gruppo 
 
     sigset_t my_mask;
     if(sigemptyset(&my_mask) == -1)

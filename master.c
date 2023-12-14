@@ -109,12 +109,13 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 
 int main(){
     pid_t master_pid = getpid(), child_pid;
+    pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
     int semid_isimulaz, msgid, shmid; //semid semafoto master
     union semun arg_simulazione, arg_inizializzazione,  arg_stats;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
     arg_stats.val = 1;
-    if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
+    if((semid_isimulaz = semget(IPC_PRIVATE, 3, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
     
     //printf("[master] semid: %d", semid_isimulaz);
@@ -124,6 +125,9 @@ int main(){
     
     if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
+
+    /*if(semctl(semid_isimulaz, 2, SETVAL, arg_stats) == -1) //inizializzo semaforo stats a 1, provare a fermare l'attivatore?
+        err_exit("semctl con SETVAL su semid_isimulaz\n");*/
 
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget");
@@ -159,7 +163,7 @@ int main(){
         sleep(1);
     }*/
     
-    sleep(10);
+    sleep(5);
     printf("[master] aspetto e dealloco tutto\n");
 
     //printf("[master] SIM_DURATION iteraz, aspetto...\n");
@@ -172,5 +176,10 @@ int main(){
 
     if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
         err_exit("remove shared memory scissioni con IPC_RMID\n");
+
+    if (kill(-group_pid, SIGTERM)==-1)
+    {
+        err_exit("kill group_pid\n");
+    }
     exit(EXIT_SUCCESS);
 }

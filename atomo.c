@@ -31,8 +31,8 @@ int main(int argc, char **argv){
     struct sigaction sa;
     sa.sa_handler = &handler_fork;
     sa.sa_flags = 0;
-
-    printf("[atomo] NUM_ATOMICO: %d\n", NUM_ATOMICO); //GROUP PID: getpgid(getpid() check gruppo 
+    
+    //printf("[atomo %d] gpid: %d\n", getpid(), getpgid(getpid())); //GROUP PID: getpgid(getpid()) check gruppo 
 
     sigset_t my_mask;
     if(sigemptyset(&my_mask) == -1)
@@ -42,7 +42,7 @@ int main(int argc, char **argv){
     if(sigaction(SIGUSR1, &sa, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 
-    if(init == 0){
+    if(init == 0){ //init del master
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione\n");
         //fine inizializzazione
@@ -60,7 +60,7 @@ int main(int argc, char **argv){
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
-    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), IPC_NOWAIT) == -1){
+    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1){
         perror("msg: ");
         err_exit("Msg snd identificazione\n");
     }

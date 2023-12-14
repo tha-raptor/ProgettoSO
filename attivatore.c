@@ -8,6 +8,10 @@ extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
+void print_message(struct msgbuf *message){
+    printf("m-text: %s\n", message->mtext);
+}
+
 int main(int agrc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
@@ -22,10 +26,15 @@ int main(int agrc, char **argv){
     struct msgbuf lettura_identificazione;
     int error_msgrcv;
 
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 0;          // secondi
+    sleep_time.tv_nsec = STEP_NANO; // nanosecondi
+
     for(; ;){
-        sleep(1);
+        nanosleep(&sleep_time, NULL);
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
-            printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+            //print_message(&lettura_identificazione);
+            //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
             kill(atoi(lettura_identificazione.mtext), SIGUSR1);
         }
         if(error_msgrcv == -1){ //se ha dato errore la msgrcv

@@ -16,6 +16,9 @@ compile:
 start:
 	./master 
 	
+removeipc:
+	./removeipc.sh
+
 clean:
 	rm -f *.o
 	ls | grep -v "\." | grep -v Makefile | xargs rm

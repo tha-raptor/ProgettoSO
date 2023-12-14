@@ -7,19 +7,20 @@
 #include <sys/types.h>
 
 // TERMINAZIONE
-#define SIM_DURATION 18
+#define SIM_DURATION 5
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 2
+#define N_ATOMI_INIT 0
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
 #define ENERGY_DEMAND 15
-#define STEP_NANO 900000000 //0.1 secondi
+#define STEP_NANO 900000000 //0.9 secondi
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 1
+#define N_NUOVI_ATOMI 4
 
+//N_INIT = 2 -> 8, 15
 
 //Dichiarazione semun MacOS-VM
 #if defined(__linux__)

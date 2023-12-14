@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     //printf("[alimentazione] inizio anche io simulazione\n");
 
     char *envp[] = {NULL};
-    char **argvAtomo = (char **)malloc(sizeof(char*) * 3); 
+    char **argvAtomo = (char **)malloc(sizeof(char*) * 6); 
     char *argv_semid = (char*)malloc(sizeof(char) * 20);
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 20);
@@ -31,15 +31,17 @@ int main(int argc, char **argv){
     char *argv_shmid = (char*)malloc(sizeof(char) * 20);
     sprintf(argv_shmid, "%d", shmid);
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
-
+    int init = 1;
+    char *argv_inizializzazione = (char*)malloc(sizeof(char) * 10); 
+    sprintf(argv_inizializzazione, "%d", init);
     pid_t parent_pid = getpid();
     pid_t child_pid;
     int counter_creazione = 0;
 
-    /*for (; ;) {
+    for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI
-            printf("\n[alimentazione %d] creo un atomo\n", getpid());
+            //printf("\n[alimentazione %d] creo un atomo\n", getpid());
             srand((unsigned int) counter_creazione + 1); // setto il seed
             if(getpid() == parent_pid)
                 child_pid = fork();
@@ -51,13 +53,17 @@ int main(int argc, char **argv){
                     argvAtomo[0] = NUM_ATOMICO;
                     argvAtomo[1] = argv_msgid;
                     argvAtomo[2] = argv_shmid;
-                    argvAtomo[3] = (char *)NULL;
+                    argvAtomo[3] = argv_semid;
+                    argvAtomo[4] = argv_inizializzazione;
+                    argvAtomo[5]= NULL;
                     execve("./atomo", argvAtomo, envp); //argv[0] = NUM_ATOMICO, argv[1] = msgid, envp = NULL
                     err_exit("Exceve atomo");
+                default:
+                     counter_creazione++;
             }
         }
         counter_creazione = 0; //azzero -> pronto a ricreare altri N_NUOVI_ATOMI
-    }*/
+    }
     
     exit(EXIT_SUCCESS);
 }

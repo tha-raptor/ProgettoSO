@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <errno.h>
@@ -86,6 +87,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia consumata: %d\n", scissioni[1].energia_consumata);
     printf("scissioni: %d\n", scissioni[1].scissioni);
     
+    //calcolo assolute
     scissioni[0].attivazioni += scissioni[1].attivazioni;
     scissioni[0].scorie += scissioni[1].scorie;
     scissioni[0].scissioni += scissioni[1].scissioni;
@@ -98,7 +100,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia prodotta: %d\n", scissioni[0].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[0].energia_consumata);
     printf("scissioni: %d\n", scissioni[0].scissioni);
-    
+     printf("\n--------------------\n");
     //azzero le stats relative
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
@@ -115,10 +117,11 @@ int main(){
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
     arg_stats.val = 1;
+
     if((semid_isimulaz = semget(IPC_PRIVATE, 3, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
     
-    //printf("[master] semid: %d", semid_isimulaz);
+    //printf("[master] gpid: %d\n", group_pid);
 
     if(semctl(semid_isimulaz, 0, SETVAL, arg_inizializzazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
@@ -126,7 +129,7 @@ int main(){
     if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
 
-    /*if(semctl(semid_isimulaz, 2, SETVAL, arg_stats) == -1) //inizializzo semaforo stats a 1, provare a fermare l'attivatore?
+   /*if(semctl(semid_isimulaz, 2, SETVAL, arg_stats) == -1) //inizializzo semaforo stats a 1, provare a fermare l'attivatore?
         err_exit("semctl con SETVAL su semid_isimulaz\n");*/
 
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
@@ -158,13 +161,14 @@ int main(){
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
-    /*for(int i = 0;i < SIM_DURATION ;i++){
-        print_stats(scissioni, semid_isimulaz);
+    for(int i = 0;i < SIM_DURATION ;i++){
         sleep(1);
-    }*/
+        scissioni[1].energia_consumata = ENERGY_DEMAND;
+        print_stats(scissioni, semid_isimulaz);
+    }
     
-    sleep(5);
     printf("[master] aspetto e dealloco tutto\n");
+    sleep(5);
 
     //printf("[master] SIM_DURATION iteraz, aspetto...\n");
     
@@ -177,9 +181,10 @@ int main(){
     if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
         err_exit("remove shared memory scissioni con IPC_RMID\n");
 
-    if (kill(-group_pid, SIGTERM)==-1)
-    {
+    free(scissioni);
+
+    if (kill(-group_pid, SIGKILL)==-1)
         err_exit("kill group_pid\n");
-    }
+    
     exit(EXIT_SUCCESS);
 }

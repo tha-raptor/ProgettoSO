@@ -36,19 +36,6 @@ int energy(int n1, int n2){
     return n1 * n2 - max;
 }
 
-void print_errshmat(){
-    switch(errno){
-        case EACCES:
-            printf("\nEACCES :%d", errno);
-            exit(EXIT_FAILURE);
-        case EINVAL:
-             printf("\nEINVAL: %d", errno);
-            exit(EXIT_FAILURE);
-        case EMFILE:
-             printf("\nEMFILE: %d", errno);
-            exit(EXIT_FAILURE);
-        case ENOMEM:
-            printf("\nENOMEM%d", errno);
-            exit(EXIT_FAILURE);
-    }
+void print_protagonista_term(char *s, int pid){
+    printf("Protagonista meltdown [%s] %d\n", s, pid);
 }

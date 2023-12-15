@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <sys/msg.h>
 #include "definizioni.h"
 #include "libscissione.h"
 #include <string.h>
@@ -8,6 +9,8 @@ extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
 int main(int argc, char **argv){
+    int error_msgrcv;
+    struct msgbuf message;
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -49,8 +52,15 @@ int main(int argc, char **argv){
                 child_pid = fork();
             switch(child_pid){
                 case -1:
-                    kill(SIGUSR2, getppid());
-                    err_exit("Fork atomo");
+                    error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
+                    if(error_msgrcv == -1){ //se ha dato errore la msgrcv
+                        if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
+                            err_exit("failure msgrcv"); //esci
+                    }
+                    print_protagonista_term("alimentazione -> atomo", getpid());
+                    if(kill(atoi(message.mtext), SIGUSR2 ) == -1)
+                        err_exit("kill verso master\n");
+                    exit(EXIT_SUCCESS);
                 case 0:  
                     sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX
                     argvAtomo[0] = NUM_ATOMICO;

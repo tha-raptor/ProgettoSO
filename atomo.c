@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
     if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1){
-        printf("%d\n", getpgid(getpid()));
+        printf("[atomo fail] %d\n", getpgid(getpid()));
         err_exit("Msg snd identificazione\n");
     }
     
@@ -120,14 +120,16 @@ int main(int argc, char **argv){
         switch(fork()){
             case -1:
                 error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
-                print_message(&message);
+                //print_message(&message);
                 if(error_msgrcv == -1){ //se ha dato errore la msgrcv
                     if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
                         err_exit("failure msgrcv"); //esci
                 }
+                print_protagonista_term("atomo -> atomo", getpid());
                 if(kill(atoi(message.mtext), SIGUSR2 ) == -1)
                     err_exit("kill verso master\n");
                 //err_exit("fork atomo\n");
+                exit(EXIT_SUCCESS);
             case 0:
                 execve("./atomo", argv_figlio_1, envp);
                 err_exit("Errore execve atomo figlio 1\n");

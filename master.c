@@ -14,7 +14,7 @@ extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
-int term;
+int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
@@ -49,7 +49,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 
 int check_terminazioni(struct stat_scissione *scissioni){
     int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
-    if(energia_disponibile < 0) 
+    if(energia_disponibile < 0)
         return -1; //blackout
     if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
         return -2; //explode
@@ -61,10 +61,11 @@ void ignora_sigterm(){
 
 void handler_sigursdue(){
     flag = 0;
-    term = -3;
+    if(kill(-getpgid(getpid()), SIGTERM) == -1)
+        err_exit("kill group_pid\n");
 }
 
-void termina_simulazione(int semid, int msgid, int shmid){
+void uccidi_processi(int semid, int msgid, int shmid){
     if (kill(-getpgid(getpid()), SIGTERM)==-1)
         err_exit("kill group_pid\n");
 }
@@ -81,8 +82,10 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
 
     switch(fork()){ //creazione attivatore
         case -1:
-            termina_simulazione(semid, msgid, shmid);
-            err_exit("Fork attivatore");
+            uccidi_processi(semid, msgid, shmid);
+            //err_exit("Fork attivatore");
+            print_protagonista_term("master -> attivatore", getpid());
+            exit(EXIT_SUCCESS);
         case 0:
             execve("./attivatore", argv_processi, envp);
             err_exit("Exceve attivatore");
@@ -90,8 +93,10 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     
     switch(fork()){ //creazione alimentazione
         case -1:
-            termina_simulazione(semid, msgid, shmid);
-            err_exit("Fork alimentazione");
+            uccidi_processi(semid, msgid, shmid);
+            //err_exit("Fork alimentazione");
+            print_protagonista_term("master -> alimentazione", getpid());
+            exit(EXIT_SUCCESS);
         case 0:
             execve("./alimentazione", argv_processi, envp);
             err_exit("Exceve alimentazione");
@@ -99,8 +104,10 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
 
     switch(fork()){ //creazione inibitore
         case -1:
-            termina_simulazione(semid, msgid, shmid);
-            err_exit("Fork inibitore");
+            uccidi_processi(semid, msgid, shmid);
+            //err_exit("Fork inibitore");
+            print_protagonista_term("master -> inibitore", getpid());
+            exit(EXIT_SUCCESS);
         case 0:
             execve("./inibitore", argv_processi, envp);
             err_exit("Exceve inibitore");
@@ -119,8 +126,10 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
         
         switch(child_pid){
             case -1:
-                termina_simulazione(semid, msgid, shmid);
+                uccidi_processi(semid, msgid, shmid);
                 //err_exit("Fork atomo");
+                print_protagonista_term("master -> atomo_init", getpid());
+                exit(EXIT_SUCCESS);
             case 0:  
                 sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX
                 argvAtomo[0] = NUM_ATOMICO;
@@ -201,8 +210,9 @@ int main(){
     message.mtype = 2;
     sprintf(message.mtext, "%d", getpid());
 
-    if(msgsnd(msgid, &message, sizeof(message), 0) == -1)
+    if(msgsnd(msgid, &message, sizeof(message), 0) == -1) //master si identifica con mtype = 2
         err_exit("Msg snd identificazione\n");
+    
     //printf("[master] inizio inizializzazione");
 
     init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
@@ -211,43 +221,34 @@ int main(){
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem\n");
 
-    printf("\n[master grouppid: %d] fine inizializzazione, inizia la simulazione\n", group_pid);
+    //printf("\n[master grouppid: %d] fine inizializzazione, inizia la simulazione\n", group_pid);
     //inizio simulzione
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
     for(int i = 0; i < SIM_DURATION && flag; i++){
         sleep(1);
-        /*if (reserveSem(semid_isimulaz, 2, 1, 2) == -1)
-            err_exit("errore nella reserveSem");*/
         term = check_terminazioni(scissioni); //attenzione al primo giro andrà sempre in blackout (da risolvere)
-        if(term == 0){ //si prosegue
+        if(term == 0 && flag != 0){ //si prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
         }
         else //blackout o explode
             flag = 0;
-        
-        /*if(releaseSem(semid_isimulaz, 2, 1, 2) == -1)
-            err_exit("errore nella releaseSem");*/
     }
-
     if(flag == 1)
         printf("[master dealloco] terminazione: timeout\n");
     else if(term == -1)
         printf("[master dealloco] terminazione: blackout\n");
     else if(term == -2)
         printf("[master dealloco] terminazione: explode\n");
-    else if(term == -3){
+    else
         printf("[master dealloco] terminazione: meltdown\n");
-    }
 
-    termina_simulazione(semid_isimulaz, msgid, shmid);
+    uccidi_processi(semid_isimulaz, msgid, shmid);
 
     pid_t pid_prova;
-    while ((pid_prova = waitpid(-group_pid, NULL, 0))>0){
-        printf("il processo %d ha finito\n", pid_prova);
-    }
+    while ((pid_prova = waitpid(-group_pid, NULL, 0))>0);
 
     if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");

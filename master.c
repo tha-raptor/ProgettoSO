@@ -109,6 +109,15 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[1].scissioni = 0;
 }
 
+int check_terminazioni(struct stat_scissione *scissioni){
+    int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
+    if(energia_disponibile < 0) 
+        return -1; //blackout
+    if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
+        return -2; //explode
+    return 0; //si prosegue con la simulazione
+}
+
 int main(){
     pid_t master_pid = getpid(), child_pid;
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
@@ -161,16 +170,27 @@ int main(){
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
-    for(int i = 0;i < SIM_DURATION ;i++){
-        sleep(1);
-        scissioni[1].energia_consumata = ENERGY_DEMAND;
-        print_stats(scissioni, semid_isimulaz);
-    }
-    
-    printf("[master] aspetto e dealloco tutto\n");
-    sleep(5);
+    int term;
+    int flag = 1; //true
 
-    //printf("[master] SIM_DURATION iteraz, aspetto...\n");
+    for(int i = 0; i < SIM_DURATION && flag ;i++){
+        sleep(1);
+        term = check_terminazioni(scissioni); //attenzione al primo giro andrà sempre in blackout (da risolvere)
+        if(term == 0){ //si prosegue
+            scissioni[1].energia_consumata = ENERGY_DEMAND;
+            print_stats(scissioni, semid_isimulaz);
+        }
+        else //blackout o explode
+            flag = 0;
+    }
+    if(flag != 0)
+        printf("[master dealloco] terminazione: timeout\n");
+    else if(term == -1)
+        printf("[master dealloco] terminazione: explode\n");
+    else if(term == -2)
+        printf("[master dealloco] terminazione: blackout\n");
+
+    sleep(5); //provvisoria
     
     if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
@@ -180,8 +200,6 @@ int main(){
 
     if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
         err_exit("remove shared memory scissioni con IPC_RMID\n");
-
-    free(scissioni);
 
     if (kill(-group_pid, SIGKILL)==-1)
         err_exit("kill group_pid\n");

@@ -8,6 +8,7 @@
 
 // TERMINAZIONE
 #define SIM_DURATION 5
+#define ENERGY_EXPLODE_THRESHOLD 600
 //----------------------
 // INIZIALIZZAZIONE
 #define N_ATOMI_INIT 0

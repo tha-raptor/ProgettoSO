@@ -32,6 +32,8 @@ int main(int agrc, char **argv){
 
     for(; ;){
         nanosleep(&sleep_time, NULL);
+        /*if(reserveSem(semid, 2, 1, 3) == -1)
+            err_exit("errore nella reserveSem");*/
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
             //print_message(&lettura_identificazione);
             //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
@@ -41,6 +43,8 @@ int main(int agrc, char **argv){
             if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
                 err_exit("failure msgrcv"); //esci
         }
+        /*if(releaseSem(semid, 2, 1, 3) == -1)
+            err_exit("errore nella releaseSem");*/
     }
 
     exit(EXIT_SUCCESS);

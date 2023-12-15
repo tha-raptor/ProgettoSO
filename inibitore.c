@@ -11,9 +11,9 @@ int main(int argc, char **argv){
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem\n");
-     //printf("[inibitore %d] ho inizializzato, aspetto...\n", getpid());
+    //printf("[inibitore %d] ho inizializzato, aspetto...\n", getpid());
      if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione");
-     //printf("[inibitore] inizio anche io simulazione\n");
+     printf("[inibitore] inizio anche io simulazione\n");
     exit(EXIT_SUCCESS);
 }

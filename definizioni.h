@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -7,19 +8,19 @@
 #include <sys/types.h>
 
 // TERMINAZIONE
-#define SIM_DURATION 5
-#define ENERGY_EXPLODE_THRESHOLD 600
+#define SIM_DURATION 8
+#define ENERGY_EXPLODE_THRESHOLD 10000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 0
+#define N_ATOMI_INIT 1000
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 15
-#define STEP_NANO 900000000 //0.9 secondi
+#define ENERGY_DEMAND 10
+#define STEP_NANO 500000000 //0.1 secondi
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 4
+#define N_NUOVI_ATOMI 10
 
 //N_INIT = 2 -> 8, 15
 

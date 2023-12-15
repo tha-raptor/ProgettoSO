@@ -19,8 +19,18 @@ struct stat_scissione *scissioni = NULL;
 void handler_fork(){
     scissioni[1].attivazioni += 1;
 }
+void handler_sigterm(){
+    shmdt(scissioni);
+    exit(EXIT_SUCCESS);
+}
+
+void print_message(struct msgbuf *message){
+    printf("m-text: %s\n", message->mtext);
+}
 
 int main(int argc, char **argv){
+    struct msgbuf message;
+    int error_msgrcv;
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -28,18 +38,26 @@ int main(int argc, char **argv){
     int init = atoi(argv[4]);
     struct msgbuf msg_identificazione;
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
-    struct sigaction sa;
-    sa.sa_handler = &handler_fork;
-    sa.sa_flags = 0;
+    struct sigaction sa_sigurs, sa_sigterm;
+    sa_sigurs.sa_handler = &handler_fork;
+    sa_sigurs.sa_flags = 0;
+    sa_sigterm.sa_handler = &handler_sigterm;
+    sa_sigterm.sa_flags = 0;
     
     //printf("[atomo %d] gpid: %d\n", getpid(), getpgid(getpid())); //GROUP PID: getpgid(getpid()) check gruppo 
 
-    sigset_t my_mask;
-    if(sigemptyset(&my_mask) == -1)
-        err_exit("sigemptyset su my_mask");
-    sa.sa_mask = my_mask;
+    sigset_t mask_sigurs, mask_sigterm;
+    if(sigemptyset(&mask_sigurs) == -1)
+        err_exit("sigemptyset su mask_sigurs");
+     if(sigemptyset(&mask_sigterm) == -1)
+        err_exit("sigemptyset su mask_sigterm");
+    sa_sigurs.sa_mask = mask_sigurs;
+    sa_sigterm.sa_mask = mask_sigterm;
 
-    if(sigaction(SIGUSR1, &sa, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS1\n");
+    
+    if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 
     if(init == 0){ //init del master
@@ -61,7 +79,7 @@ int main(int argc, char **argv){
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
     if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1){
-        perror("msg: ");
+        printf("%d\n", getpgid(getpid()));
         err_exit("Msg snd identificazione\n");
     }
     
@@ -101,7 +119,15 @@ int main(int argc, char **argv){
     char *envp[1] = {NULL};
         switch(fork()){
             case -1:
-                err_exit("fork atomo\n");
+                error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
+                print_message(&message);
+                if(error_msgrcv == -1){ //se ha dato errore la msgrcv
+                    if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
+                        err_exit("failure msgrcv"); //esci
+                }
+                if(kill(atoi(message.mtext), SIGUSR2 ) == -1)
+                    err_exit("kill verso master\n");
+                //err_exit("fork atomo\n");
             case 0:
                 execve("./atomo", argv_figlio_1, envp);
                 err_exit("Errore execve atomo figlio 1\n");

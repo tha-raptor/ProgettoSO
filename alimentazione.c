@@ -1,3 +1,4 @@
+#include <signal.h>
 #include "definizioni.h"
 #include "libscissione.h"
 #include <string.h>
@@ -10,6 +11,7 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
+
     //manuale linux
     struct timespec sleep_time;
     sleep_time.tv_sec = 0;          // secondi
@@ -47,6 +49,7 @@ int main(int argc, char **argv){
                 child_pid = fork();
             switch(child_pid){
                 case -1:
+                    kill(SIGUSR2, getppid());
                     err_exit("Fork atomo");
                 case 0:  
                     sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX

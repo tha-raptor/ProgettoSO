@@ -28,28 +28,17 @@ void print_message(struct msgbuf *message){
     printf("m-text: %s\n", message->mtext);
 }
 
-int main(int argc, char **argv){
-    struct msgbuf message;
-    int error_msgrcv;
-    int NUM_ATOMICO = atoi(argv[0]);
-    int msgid = atoi(argv[1]);
-    int shmid = atoi(argv[2]);
-    int semid = atoi(argv[3]);
-    int init = atoi(argv[4]);
-    struct msgbuf msg_identificazione;
-    scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
+void handle_sig(){
     struct sigaction sa_sigurs, sa_sigterm;
     sa_sigurs.sa_handler = &handler_fork;
     sa_sigurs.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
-    
-    //printf("[atomo %d] gpid: %d\n", getpid(), getpgid(getpid())); //GROUP PID: getpgid(getpid()) check gruppo 
 
     sigset_t mask_sigurs, mask_sigterm;
     if(sigemptyset(&mask_sigurs) == -1)
         err_exit("sigemptyset su mask_sigurs");
-     if(sigemptyset(&mask_sigterm) == -1)
+    if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
     sa_sigurs.sa_mask = mask_sigurs;
     sa_sigterm.sa_mask = mask_sigterm;
@@ -59,32 +48,41 @@ int main(int argc, char **argv){
     
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
+}
 
-    if(init == 0){ //init del master
-        if(releaseSem(semid, 0, 1, 2) == -1)
-            err_exit("releaseSem inizializzazione\n");
-        //fine inizializzazione
-        //printf("[atomo] ho inizializzato, aspetto...\n");
-        //inizio simulazione
-        if(reserveSem(semid, 1, 1, 2) == -1){
-            perror("reserveSem: \n");
-            err_exit("reserveSem simulazione\n");
-        }
-        //printf("[atomo] inizio anche io simulazione\n");
-    }
-    
-    //printf("[pid(%d), NUM_ATOMICO: %d] [SHMID: %d]\n", getpid(), NUM_ATOMICO, shmid);
-   
+void identificazione(int msgid){
+    struct msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
-    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1){
-        printf("[atomo fail] %d\n", getpgid(getpid()));
+    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1)
         err_exit("Msg snd identificazione\n");
-    }
+}
+
+int main(int argc, char **argv){
+    struct msgbuf message;
+    int error_msgrcv;
+    int NUM_ATOMICO = atoi(argv[0]);
+    int msgid = atoi(argv[1]);
+    int shmid = atoi(argv[2]);
+   
+    scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
+    handle_sig();
+    
+    if(argv[3] != NULL){ //init del master
+        int semid = atoi(argv[3]);
+        if(releaseSem(semid, 0, 1, 2) == -1)
+            err_exit("releaseSem inizializzazione\n");
+        //printf("[atomo] ho inizializzato, aspetto...\n");
+        if(reserveSem(semid, 1, 1, 2) == -1)
+            err_exit("reserveSem simulazione\n");
+        //printf("[atomo] inizio anche io simulazione\n");
+    }
+
+    identificazione(msgid); //capire perchè non posso spostarla
     pause();
-    //printf("[atomo svegliato dal segnale]\n");
+   
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
@@ -96,25 +94,17 @@ int main(int argc, char **argv){
         sprintf(msgid_char, "%d", msgid);
         char *shmid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
         sprintf(shmid_char, "%d", shmid);
-        char *semid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
-        sprintf(semid_char, "%d", semid);
-        int init_uno = 1;
-        char *init_char = (char*)malloc(sizeof(char) * 10); 
-        sprintf(init_char, "%d", init_uno);
-        char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 5);
-        char **argv_figlio_2 = (char**)malloc(sizeof(char*) * 5);
+
+        char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 4);
+        char **argv_figlio_2 = (char**)malloc(sizeof(char*) * 4);
         argv_figlio_1[0] = num_a1_char;
         argv_figlio_1[1] = msgid_char;
         argv_figlio_1[2] = shmid_char;
-        argv_figlio_1[3] = semid_char;
-        argv_figlio_1[4] = init_char;
-        argv_figlio_1[5] = NULL;
+        argv_figlio_1[3] = NULL;
         argv_figlio_2[0] = num_a2_char;
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
-        argv_figlio_2[3] = semid_char;
-        argv_figlio_2[4] = init_char;
-        argv_figlio_2[5] = NULL;
+        argv_figlio_2[3] = NULL;
 
     char *envp[1] = {NULL};
         switch(fork()){

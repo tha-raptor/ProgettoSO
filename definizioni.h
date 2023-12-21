@@ -9,20 +9,18 @@
 
 // TERMINAZIONE
 #define SIM_DURATION 10
-#define ENERGY_EXPLODE_THRESHOLD 10000
+#define ENERGY_EXPLODE_THRESHOLD 100000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 10
+#define N_ATOMI_INIT 20
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 10
-#define STEP_NANO 500000000 //0.1 secondi
+#define ENERGY_DEMAND 1
+#define STEP_NANO 500000000 //0.5 secondi
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
 #define N_NUOVI_ATOMI 10
-
-//N_INIT = 2 -> 8, 15
 
 //Dichiarazione semun MacOS-VM
 #if defined(__linux__)

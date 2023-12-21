@@ -15,6 +15,12 @@ void print_message(struct msgbuf *message){
 int main(int agrc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
+    struct msgbuf lettura_identificazione;
+    int error_msgrcv;
+
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 0;          // secondi
+    sleep_time.tv_nsec = STEP_NANO; // nanosecondi
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem\n");
@@ -23,17 +29,8 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione\n");
     //printf("[attivatore] inizio anche io simulazione\n");
 
-    struct msgbuf lettura_identificazione;
-    int error_msgrcv;
-
-    struct timespec sleep_time;
-    sleep_time.tv_sec = 0;          // secondi
-    sleep_time.tv_nsec = STEP_NANO; // nanosecondi
-
     for(; ;){
         nanosleep(&sleep_time, NULL);
-        /*if(reserveSem(semid, 2, 1, 3) == -1)
-            err_exit("errore nella reserveSem");*/
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
             //print_message(&lettura_identificazione);
             //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
@@ -43,8 +40,6 @@ int main(int agrc, char **argv){
             if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
                 err_exit("failure msgrcv"); //esci
         }
-        /*if(releaseSem(semid, 2, 1, 3) == -1)
-            err_exit("errore nella releaseSem");*/
     }
 
     exit(EXIT_SUCCESS);

@@ -136,8 +136,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
                 argvAtomo[1] = argv_msgid;
                 argvAtomo[2] = argv_shmid;
                 argvAtomo[3] = argv_semid;
-                argvAtomo[4] = argv_inizializzazione;
-                argvAtomo[5]= NULL;
+                argvAtomo[4]= NULL;
                 execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
                 err_exit("Exceve atomo\n");
         }
@@ -148,16 +147,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     free(argvAtomo);
 }
 
-int main(){
-    struct msgbuf message;
-    pid_t master_pid = getpid();
-    pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
-    int semid_isimulaz, msgid, shmid; //semid semafoto master
-    union semun arg_simulazione, arg_inizializzazione,  arg_sinc;
-    arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
-    arg_simulazione.val = 0;
-    arg_sinc.val = 1;
-
+void handle_sig(){
     struct sigaction sa_sigterm, sa_sigursdue;
     sa_sigterm.sa_handler = &ignora_sigterm;
     sa_sigterm.sa_flags = 0;
@@ -169,29 +159,38 @@ int main(){
     sa_sigterm.sa_mask = mask_sigterm;
     if(sigemptyset(&mask_sigursdue) == -1)
         err_exit("sigemptyset su mask_sigursdue");
-     sa_sigursdue.sa_mask = mask_sigursdue;
+    sa_sigursdue.sa_mask = mask_sigursdue;
 
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)
         err_exit("sigaction per SIGTERM");
     
     if(sigaction(SIGUSR2, &sa_sigursdue, NULL) == -1)
         err_exit("sigaction per SIGURS2");
+}
 
+int main(){
+    struct msgbuf message;
+    pid_t master_pid = getpid();
+    pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
+    int semid_isimulaz, msgid, shmid; //semid semafoto master
+    union semun arg_simulazione, arg_inizializzazione;
+    arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
+    arg_simulazione.val = 0;
+    printf("[master %d]", getpid());
+    
+    handle_sig();
+
+    //SEMAFORI
     if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
         err_exit("Semget\n");
-
     if(semctl(semid_isimulaz, 0, SETVAL, arg_inizializzazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
-    
     if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
 
-    /*if(semctl(semid_isimulaz, 2, SETVAL, arg_sinc) == -1) //inizializzo semaforo stats a 1, provare a fermare l'attivatore?
-        err_exit("semctl con SETVAL su semid_isimulaz\n");*/
-
+    //SHM
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget");
-
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
@@ -204,16 +203,14 @@ int main(){
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
 
+    //MSG_QUEUE
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
 
     message.mtype = 2;
     sprintf(message.mtext, "%d", getpid());
-
     if(msgsnd(msgid, &message, sizeof(message), 0) == -1) //master si identifica con mtype = 2
         err_exit("Msg snd identificazione\n");
-    
-    //printf("[master] inizio inizializzazione");
 
     init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
 
@@ -221,8 +218,6 @@ int main(){
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem\n");
 
-    //printf("\n[master grouppid: %d] fine inizializzazione, inizia la simulazione\n", group_pid);
-    //inizio simulzione
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione\n");
 
@@ -247,8 +242,7 @@ int main(){
 
     uccidi_processi(semid_isimulaz, msgid, shmid);
 
-    pid_t pid_prova;
-    while ((pid_prova = waitpid(-group_pid, NULL, 0))>0);
+    while (waitpid(-group_pid, NULL, 0)>0);
 
     if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");

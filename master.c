@@ -185,7 +185,7 @@ int main(){
     union semun arg_simulazione, arg_inizializzazione;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
-    printf("[master %d]", getpid());
+    printf("[master %d]\n", getpid());
     handle_sig();
 
     //SEMAFORI
@@ -233,11 +233,25 @@ int main(){
         exit(EXIT_FAILURE);
     }
     int pid_attivatore = atoi(notifica_attivatore.mtext);
-        
+
+    //SEMAFORO FINE INIT  
     int semaph_operation = N_ATOMI_INIT + 3;
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem inizializzazione master\n");
 
+    //PRE-INIZIO SIMULAZ FLAG INIBITORE
+    char si_no;
+    int flag_inib;
+    printf("Inibitore (y/n):");
+    do{
+        scanf("%c", &si_no);
+    }while(si_no != 'y' && si_no != 'n');
+    flag_inib = si_no == 'y' ? 1: 0;
+    printf("---------\n");
+    printf("[inib : %d]\n", flag_inib);
+    printf("---------\n");
+
+    //SEMAFORO INIZIO SIMULAZ (RILASCIA TUTTI I PROCESSI)
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione master\n");
 

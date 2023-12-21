@@ -48,7 +48,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){
-    int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
+    int energia_disponibile =scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
     if(energia_disponibile < 0)
         return -1; //blackout
     if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
@@ -219,7 +219,7 @@ int main(){
 
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
-    //PRENDE IL MESSAGGIO E LO COMUNICA CON UN SEGNALEA MASTER CHE DEALLOCA TUTTO
+    //PRENDE IL MESSAGGIO E LO COMUNICA CON UN SEGNALE A MASTER CHE DEALLOCA TUTTO
     message.mtype = 2;
     sprintf(message.mtext, "%d", getpid());
     if(msgsnd(msgid, &message, sizeof(message), 0) == -1) //master si identifica con mtype = 2

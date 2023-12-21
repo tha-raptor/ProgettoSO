@@ -4,7 +4,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
-#include <signal.h>
+#include <sys/signal.h>
 #include <errno.h>
 #include "definizioni.h"
 #include "libscissione.h"

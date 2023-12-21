@@ -17,8 +17,8 @@ extern void err_exit(char *);
 struct stat_scissione *scissioni = NULL;
 
 void handler_fork(){
-    scissioni[1].attivazioni += 1;
 }
+
 void handler_sigterm(){
     shmdt(scissioni);
     exit(EXIT_SUCCESS);
@@ -56,7 +56,7 @@ void identificazione(int msgid){
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
     if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1)
-        err_exit("Msg snd identificazione\n");
+        err_exit("Msg snd identificazione atomo\n");
 }
 
 int main(int argc, char **argv){
@@ -65,7 +65,7 @@ int main(int argc, char **argv){
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-   
+    //printf("[atomo %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
     handle_sig();
@@ -73,10 +73,10 @@ int main(int argc, char **argv){
     if(argv[3] != NULL){ //init del master
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
-            err_exit("releaseSem inizializzazione\n");
+            err_exit("releaseSem inizializzazione atomo\n");
         //printf("[atomo] ho inizializzato, aspetto...\n");
         if(reserveSem(semid, 1, 1, 2) == -1)
-            err_exit("reserveSem simulazione\n");
+            err_exit("reserveSem simulazione atomo\n");
         //printf("[atomo] inizio anche io simulazione\n");
     }
 

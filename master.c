@@ -112,10 +112,8 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             execve("./inibitore", argv_processi, envp);
             err_exit("Exceve inibitore");
     }
-    int init = 0;
+
     pid_t child_pid;
-    char *argv_inizializzazione = (char*)malloc(sizeof(char) * 10); 
-    sprintf(argv_inizializzazione, "%d", init);
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
 
@@ -168,8 +166,19 @@ void handle_sig(){
         err_exit("sigaction per SIGURS2");
 }
 
+void dealloca_risorse(int semid_isimulaz, int msgid, int shmid){
+     if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
+        err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
+
+    if(msgctl(msgid, IPC_RMID, NULL) == -1) //elimino la coda di messaggi
+        err_exit("remove msg_identificazine con IPC_RMID\n");
+
+    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
+        err_exit("remove shared memory scissioni con IPC_RMID\n");
+}
+
 int main(){
-    struct msgbuf message;
+    struct msgbuf message, notifica_attivatore;
     pid_t master_pid = getpid();
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
     int semid_isimulaz, msgid, shmid; //semid semafoto master
@@ -177,7 +186,6 @@ int main(){
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
     printf("[master %d]", getpid());
-    
     handle_sig();
 
     //SEMAFORI
@@ -207,26 +215,40 @@ int main(){
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
 
+    init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
+
+    //SI NOTIFICA SULLA CODA
+    //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
+    //PRENDE IL MESSAGGIO E LO COMUNICA CON UN SEGNALEA MASTER CHE DEALLOCA TUTTO
     message.mtype = 2;
     sprintf(message.mtext, "%d", getpid());
     if(msgsnd(msgid, &message, sizeof(message), 0) == -1) //master si identifica con mtype = 2
-        err_exit("Msg snd identificazione\n");
+        err_exit("Msg snd identificazione master\n");
 
-    init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
-
+    //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
+    if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
+        uccidi_processi(semid_isimulaz, msgid, shmid);
+        while (waitpid(-group_pid, NULL, 0)>0);
+        dealloca_risorse(semid_isimulaz, msgid, shmid);
+        exit(EXIT_FAILURE);
+    }
+    int pid_attivatore = atoi(notifica_attivatore.mtext);
+        
     int semaph_operation = N_ATOMI_INIT + 3;
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
-        err_exit("reserveSem\n");
+        err_exit("reserveSem inizializzazione master\n");
 
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
-        err_exit("releaseSem simulazione\n");
+        err_exit("releaseSem simulazione master\n");
 
+    //INIZIO SIMULAZIONE
     for(int i = 0; i < SIM_DURATION && flag; i++){
         sleep(1);
-        term = check_terminazioni(scissioni); //attenzione al primo giro andrà sempre in blackout (da risolvere)
-        if(term == 0 && flag != 0){ //si prosegue
+        term = check_terminazioni(scissioni);
+        if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
+            kill(pid_attivatore, SIGUSR1); //notifica attivatore che ha finito di scrivere
         }
         else //blackout o explode
             flag = 0;
@@ -244,14 +266,7 @@ int main(){
 
     while (waitpid(-group_pid, NULL, 0)>0);
 
-    if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
-        err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
+    dealloca_risorse(semid_isimulaz, msgid, shmid);
 
-    if(msgctl(msgid, IPC_RMID, NULL) == -1) //elimino la coda di messaggi
-        err_exit("remove msg_identificazine con IPC_RMID\n");
-
-    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
-        err_exit("remove shared memory scissioni con IPC_RMID\n");
-
-     exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }

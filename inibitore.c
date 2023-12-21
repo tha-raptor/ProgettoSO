@@ -10,10 +10,10 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
 
     if(releaseSem(semid, 0, 1, 2) == -1)
-        err_exit("releaseSem\n");
+        err_exit("releaseSem inizializzazione inibitore\n");
     //printf("[inibitore %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
-        err_exit("reserveSem simulazione");
+        err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
     exit(EXIT_SUCCESS);
 }

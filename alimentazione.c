@@ -32,10 +32,10 @@ int main(int argc, char **argv){
     sleep_time.tv_nsec = STEP_NANO; // nanosecondi
 
     if(releaseSem(semid, 0, 1, 2) == -1)
-        err_exit("releaseSem\n");
+        err_exit("releaseSem inizializzazione alimentazione\n");
     //printf("[alimentazione %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
-        err_exit("reserveSem simulazione\n");
+        err_exit("reserveSem simulazione alimentazione\n");
     //printf("[alimentazione] inizio anche io simulazione\n");
 
     for (; ;) {

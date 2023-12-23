@@ -178,7 +178,8 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid){
 }
 
 int main(){
-    struct msgbuf message_tutti, notifica_attivatore, msg_inib_inib, msg_inib_atomo;
+    struct msgbuf message_tutti, notifica_attivatore,
+     msg_inib_inib, msg_inib_atomo, msg_inib_attiv;
     pid_t master_pid = getpid();
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
     int semid_isimulaz, msgid, shmid, shmid_inib; //semid semafoto master
@@ -210,7 +211,8 @@ int main(){
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
-    if( (shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
+
+    if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
         err_exit("shmget inib");
     struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->flag_inib = 0;
@@ -235,9 +237,9 @@ int main(){
     if(msgsnd(msgid, &msg_inib_inib, sizeof(msg_inib_inib), 0) == -1 )
         err_exit("Msg snd master -> inib\n");
 
-    msg_inib_atomo.mtype = 11; //messaggio a atomo con idshm inib
-    sprintf(msg_inib_atomo.mtext, "%d", shmid_inib);
-    if(msgsnd(msgid, &msg_inib_atomo, sizeof(msg_inib_atomo), 0) == -1 )
+    msg_inib_attiv.mtype = 11; //messaggio a attivatore con idshm inib
+    sprintf(msg_inib_attiv.mtext, "%d", shmid_inib);
+    if(msgsnd(msgid, &msg_inib_attiv, sizeof(msg_inib_attiv), 0) == -1 )
         err_exit("Msg snd master -> atomo\n");
         
         

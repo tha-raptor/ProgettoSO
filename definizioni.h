@@ -53,6 +53,8 @@ struct stat_scissione{
 struct stat_inibitore{
     int flag_inib;
     char *operazione;
+    int pid_attivatore;
+    int pid_inibitore;
 };
 
 /*

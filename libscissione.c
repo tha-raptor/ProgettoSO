@@ -1,3 +1,4 @@
+#include "definizioni.h"
 #include <sys/sem.h>
 #include <errno.h>
 #include <stdlib.h>

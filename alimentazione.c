@@ -29,7 +29,7 @@ int main(int argc, char **argv){
     //manuale linux
     struct timespec sleep_time;
     sleep_time.tv_sec = 0;          // secondi
-    sleep_time.tv_nsec = STEP_NANO; // nanosecondi
+    sleep_time.tv_nsec = STEP_ALIMENTAZIONE; // nanosecondi
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione alimentazione\n");

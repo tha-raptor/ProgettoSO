@@ -178,10 +178,10 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid){
 }
 
 int main(){
-    struct msgbuf message, notifica_attivatore;
+    struct msgbuf message_tutti, notifica_attivatore, msg_inib_inib, msg_inib_atomo;
     pid_t master_pid = getpid();
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
-    int semid_isimulaz, msgid, shmid; //semid semafoto master
+    int semid_isimulaz, msgid, shmid, shmid_inib; //semid semafoto master
     union semun arg_simulazione, arg_inizializzazione;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
@@ -198,7 +198,7 @@ int main(){
 
     //SHM
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
-        err_exit("shmget");
+        err_exit("shmget stats");
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
@@ -210,6 +210,11 @@ int main(){
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
+    if( (shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
+        err_exit("shmget inib");
+    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
+    inibitore->flag_inib = 0;
+    inibitore->operazione = NULL;
 
     //MSG_QUEUE
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
@@ -220,11 +225,22 @@ int main(){
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
     //PRENDE IL MESSAGGIO E LO COMUNICA CON UN SEGNALE A MASTER CHE DEALLOCA TUTTO
-    message.mtype = 2;
-    sprintf(message.mtext, "%d", getpid());
-    if(msgsnd(msgid, &message, sizeof(message), 0) == -1) //master si identifica con mtype = 2
+    message_tutti.mtype = 2;
+    sprintf(message_tutti.mtext, "%d", getpid());
+    if(msgsnd(msgid, &message_tutti, sizeof(message_tutti), 0) == -1) //master si identifica con mtype = 2
         err_exit("Msg snd identificazione master\n");
 
+    msg_inib_inib.mtype = 10; //messaggio a inibitore con idshm inib
+    sprintf(msg_inib_inib.mtext, "%d", shmid_inib);
+    if(msgsnd(msgid, &msg_inib_inib, sizeof(msg_inib_inib), 0) == -1 )
+        err_exit("Msg snd master -> inib\n");
+
+    msg_inib_atomo.mtype = 11; //messaggio a atomo con idshm inib
+    sprintf(msg_inib_atomo.mtext, "%d", shmid_inib);
+    if(msgsnd(msgid, &msg_inib_atomo, sizeof(msg_inib_atomo), 0) == -1 )
+        err_exit("Msg snd master -> atomo\n");
+        
+        
     //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
     if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
         uccidi_processi(semid_isimulaz, msgid, shmid);
@@ -234,21 +250,21 @@ int main(){
     }
     int pid_attivatore = atoi(notifica_attivatore.mtext);
 
-    //SEMAFORO FINE INIT  
+    //SEMAFORO FINE INIT 
     int semaph_operation = N_ATOMI_INIT + 3;
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem inizializzazione master\n");
 
     //PRE-INIZIO SIMULAZ FLAG INIBITORE
     char si_no;
-    int flag_inib;
     printf("Inibitore (y/n):");
     do{
         scanf("%c", &si_no);
     }while(si_no != 'y' && si_no != 'n');
-    flag_inib = si_no == 'y' ? 1: 0;
+    inibitore->flag_inib = si_no == 'y' ? 1: 0;
+
     printf("---------\n");
-    printf("[inib : %d]\n", flag_inib);
+    printf("[inib : %d]\n", inibitore->flag_inib );
     printf("---------\n");
 
     //SEMAFORO INIZIO SIMULAZ (RILASCIA TUTTI I PROCESSI)
@@ -262,7 +278,7 @@ int main(){
         if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
-            kill(pid_attivatore, SIGUSR1); //notifica attivatore che ha finito di scrivere
+            kill(pid_attivatore, SIGUSR1); //notifica attivatore che master ha finito di scrivere
         }
         else //blackout o explode
             flag = 0;

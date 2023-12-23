@@ -9,10 +9,6 @@ extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
-void print_message(struct msgbuf *message){
-    printf("m-text: %s\n", message->mtext);
-}
-
 void handler_sigurs_uno(){
 
 }
@@ -56,6 +52,7 @@ int main(int agrc, char **argv){
     //printf("[attivatore] inizio anche io simulazione\n");
 
     for(; ;){
+        usleep(STEP_ATTIVATORE);
         while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
             //print_message(&lettura_identificazione);
             //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
@@ -63,9 +60,11 @@ int main(int agrc, char **argv){
             kill(atoi(lettura_identificazione.mtext), SIGUSR1);
         }
         //printf("[attivatore dorme]\n");
-        pause();
+        //pause();
         //printf("[attivatore svegliato]\n");
     }
-
     exit(EXIT_SUCCESS);
 }
+
+//FOR -> MAX ATOMI LETTI QUELLO CHE IMPOSTI
+//

@@ -125,7 +125,8 @@ int main(int argc, char **argv){
                 err_exit("Errore execve atomo figlio 1\n");
             default:
                 scissioni[1].scissioni++;
-                scissioni[1].energia_prodotta += energy(num_atomico_figlio_1, num_atomico_figlio_2);
+                int energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
+                scissioni[1].energia_prodotta += energia_prodotta_rel;
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }

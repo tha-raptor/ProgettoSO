@@ -8,19 +8,20 @@
 #include <sys/types.h>
 
 // TERMINAZIONE
-#define SIM_DURATION 10
+#define SIM_DURATION 4
 #define ENERGY_EXPLODE_THRESHOLD 100000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 5
+#define N_ATOMI_INIT 2
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
 #define ENERGY_DEMAND 1
-#define STEP_NANO 500000000 //0.5 secondi
+#define STEP_ALIMENTAZIONE 500000000
+#define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 5
+#define N_NUOVI_ATOMI 0
 
 //Dichiarazione semun MacOS-VM
 #if defined(__linux__)
@@ -48,4 +49,15 @@ struct stat_scissione{
     //int energia_assorbita; //da inibitore
     //int log_inibitore; //da inibitore
 };
-//----------------------
+
+struct stat_inibitore{
+    int flag_inib;
+    char *operazione;
+};
+
+/*
+To do:
+    - capire se sincronizz. master/attivatore è un problema?!
+    - uccidi processi si può migliorare
+*/
+

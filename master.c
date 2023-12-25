@@ -31,6 +31,14 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[0].scissioni += scissioni[1].scissioni;
     scissioni[0].energia_prodotta += scissioni[1].energia_prodotta;
     scissioni[0].energia_consumata += scissioni[1].energia_consumata;
+    scissioni[0].energia_assorbita += scissioni[1].energia_assorbita;
+
+    scissioni[1].attivazioni = 0;
+    scissioni[1].energia_consumata = 0;
+    scissioni[1].energia_prodotta = 0;
+    scissioni[1].scorie = 0;
+    scissioni[1].scissioni = 0;
+    scissioni[1].energia_assorbita = 0;
 
     printf("\n---STATS ASSOLUTE---\n");
     printf("attivazioni: %d\n", scissioni[0].attivazioni);
@@ -40,11 +48,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("scissioni: %d\n", scissioni[0].scissioni);
      printf("\n--------------------\n");
     //azzero le stats relative
-    scissioni[1].attivazioni = 0;
-    scissioni[1].energia_consumata = 0;
-    scissioni[1].energia_prodotta = 0;
-    scissioni[1].scorie = 0;
-    scissioni[1].scissioni = 0;
+   
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){
@@ -166,15 +170,18 @@ void handle_sig(){
         err_exit("sigaction per SIGURS2");
 }
 
-void dealloca_risorse(int semid_isimulaz, int msgid, int shmid){
+void dealloca_risorse(int semid_isimulaz, int msgid, int shmid, int shmid_inib){
      if(semctl(semid_isimulaz, 0, IPC_RMID, NULL) == -1) //elimino il semaforo
         err_exit("remove semid_isimulaz_inizializzazione con IPC_RMID\n");
 
     if(msgctl(msgid, IPC_RMID, NULL) == -1) //elimino la coda di messaggi
         err_exit("remove msg_identificazine con IPC_RMID\n");
 
-    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino il semaforo
-        err_exit("remove shared memory scissioni con IPC_RMID\n");
+    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino shared memory stats
+        err_exit("remove shared memory stats con IPC_RMID\n");
+
+    if(shmctl(shmid_inib, IPC_RMID, 0) == -1) //elimino shared memory inib
+        err_exit("remove shared memory inibitore con IPC_RMID\n");
 }
 
 int main(){
@@ -206,11 +213,13 @@ int main(){
     scissioni[0].energia_prodotta = 0;
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
+    scissioni[0].energia_assorbita = 0;
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
+    scissioni[1].energia_assorbita = 0;
 
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
         err_exit("shmget inib");
@@ -242,12 +251,11 @@ int main(){
     if(msgsnd(msgid, &msg_inib_attiv, sizeof(msg_inib_attiv), 0) == -1 )
         err_exit("Msg snd master -> atomo\n");
         
-        
     //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
     if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
         uccidi_processi(semid_isimulaz, msgid, shmid);
         while (waitpid(-group_pid, NULL, 0)>0);
-        dealloca_risorse(semid_isimulaz, msgid, shmid);
+        dealloca_risorse(semid_isimulaz, msgid, shmid, shmid_inib);
         exit(EXIT_FAILURE);
     }
     int pid_attivatore = atoi(notifica_attivatore.mtext);
@@ -298,7 +306,7 @@ int main(){
 
     while (waitpid(-group_pid, NULL, 0)>0);
 
-    dealloca_risorse(semid_isimulaz, msgid, shmid);
+    dealloca_risorse(semid_isimulaz, msgid, shmid, shmid_inib);
 
     exit(EXIT_SUCCESS);
 }

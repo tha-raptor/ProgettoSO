@@ -17,9 +17,9 @@ void handle_sig(){
     sa_sigurs.sa_handler = &handler_sigurs_uno;
     sa_sigurs.sa_flags = 0;
 
-    sigset_t mask_sigurs_uno;
+    sigset_t mask_sigurs_uno, mask_sigurs_due;
     if(sigemptyset(&mask_sigurs_uno) == -1)
-        err_exit("sigemptyset su mask_sigurs");
+        err_exit("sigemptyset su mask_sigurs_uno");
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
 
@@ -32,7 +32,7 @@ int main(int agrc, char **argv){
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
-    struct msgbuf lettura_identificazione, notifica_master, msg_shared_inib;
+    struct msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
     int error_msgrcv;
 
     handle_sig();
@@ -58,10 +58,11 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
     
+    int risposta_inibitore;
     for(; ;){
+        usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
-            usleep(STEP_ATTIVATORE);
-            while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
+            while ((error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
                 //print_message(&lettura_identificazione);
                 //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
                 scissioni[1].attivazioni += 1;
@@ -70,12 +71,19 @@ int main(int agrc, char **argv){
         }
         else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
-            usleep(STEP_ATTIVATORE);
-            while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
-                //print_message(&lettura_identificazione);
-                //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
-                scissioni[1].attivazioni += 1;
-                kill(atoi(lettura_identificazione.mtext), SIGUSR1);
+            if( msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR | IPC_NOWAIT) == -1){
+                perror("Che succ?");
+                risposta_inibitore = 0;
+            }
+            else{
+                risposta_inibitore = atoi(msg_fork.mtext);
+            }
+            if(risposta_inibitore){
+                while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
+                    //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+                    scissioni[1].attivazioni += 1;
+                    kill(atoi(lettura_identificazione.mtext), SIGUSR1);
+                }
             }
         }
         //pause(); //provvisorio

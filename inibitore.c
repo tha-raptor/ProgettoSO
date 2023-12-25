@@ -32,7 +32,8 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    struct msgbuf msg_shared_inib;
+    struct msgbuf msg_shared_inib, msg_fork, msg_energy;
+    msg_fork.mtype = 20;
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
 
     handle_sig();
@@ -51,19 +52,29 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
 
-    int livello_energia, livello_scissioni;
-    int soglia_massima = 40;
-    
-    for( ; ;){
-        if(inibitore->flag_inib){
-            livello_energia = scissioni[0].energia_prodotta / ENERGY_EXPLODE_THRESHOLD * 100;
-            livello_scissioni = scissioni[0].scissioni / 5000 * 100;
+    float livello_energia, livello_scissioni;
+    float soglia_massima = 0.40;
+    while(1){
+        if(inibitore->flag_inib){ //ogni 10 attivazioni guarda se fare tutto
             pause();
-            if(livello_energia > soglia_massima){
-                //assorbire energia
+            livello_energia = ((float)scissioni[0].energia_prodotta / ENERGY_EXPLODE_THRESHOLD);
+            livello_scissioni = ((float)scissioni[0].scissioni / 5000);
+            //printf("livello_energia: %f\n", livello_energia);
+            //printf("livello_scissioni: %f\n", livello_scissioni);
+            if(livello_energia > soglia_massima || livello_scissioni > soglia_massima){
+                sprintf(msg_fork.mtext, "%d", 0); //non forkare -> situazione pericolosa
+                if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
+                    perror("");
+                    err_exit("msgsnd inibitore -> attivatore\n");
+                }
+                   
             }
-            if(livello_scissioni > soglia_massima){
-                //o non far forkare o calcolare come scorie
+            else{
+                sprintf(msg_fork.mtext, "%d", 1); //continua a forkare -> situazione non pericolosa
+                if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
+                    perror("");
+                    err_exit("msgsnd inibitore -> attivatore\n");
+                }
             }
         }
     }

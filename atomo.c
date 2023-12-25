@@ -81,9 +81,12 @@ int main(int argc, char **argv){
     }
 
     identificazione(msgid); //capire perchè non posso spostarla
+    //printf("[atomo %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     pause();
    
     if(NUM_ATOMICO > MIN_N_ATOMICO){
+        struct msgbuf msg_energy;
+        msg_energy.mtype = 30;
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
         char *num_a1_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
@@ -133,7 +136,6 @@ int main(int argc, char **argv){
     }
     else{
         scissioni[1].scorie++;
-        //printf("[atomo non più forkabile %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     }
     exit(EXIT_SUCCESS);
 }

@@ -32,7 +32,7 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    struct msgbuf msg_shared_inib, msg_fork, msg_energy;
+    struct msgbuf msg_shared_inib, msg_fork;
     msg_fork.mtype = 20;
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
 
@@ -54,27 +54,29 @@ int main(int argc, char **argv){
 
     float livello_energia, livello_scissioni;
     float soglia_massima = 0.40;
+
     while(1){
-        if(inibitore->flag_inib){ //ogni 10 attivazioni guarda se fare tutto
+        if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)scissioni[0].energia_prodotta / ENERGY_EXPLODE_THRESHOLD);
             livello_scissioni = ((float)scissioni[0].scissioni / 5000);
-            //printf("livello_energia: %f\n", livello_energia);
+            printf("livello_energia: %f\n", livello_energia);
             //printf("livello_scissioni: %f\n", livello_scissioni);
             if(livello_energia > soglia_massima || livello_scissioni > soglia_massima){
                 sprintf(msg_fork.mtext, "%d", 0); //non forkare -> situazione pericolosa
                 if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
                     perror("");
-                    err_exit("msgsnd inibitore -> attivatore\n");
+                    err_exit("msgsnd 0 inibitore -> attivatore\n");
                 }
-                   
+                printf("mandato 0\n");
             }
             else{
                 sprintf(msg_fork.mtext, "%d", 1); //continua a forkare -> situazione non pericolosa
                 if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
                     perror("");
-                    err_exit("msgsnd inibitore -> attivatore\n");
+                    err_exit("msgsnd 1 inibitore -> attivatore\n");
                 }
+                printf("mandato 1\n");
             }
         }
     }

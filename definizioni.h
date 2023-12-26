@@ -12,7 +12,7 @@
 #define ENERGY_EXPLODE_THRESHOLD 10000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 100
+#define N_ATOMI_INIT 10
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI

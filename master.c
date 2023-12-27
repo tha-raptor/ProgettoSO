@@ -210,7 +210,7 @@ int main(){
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
-    scissioni[0].energia_prodotta = 0;
+    scissioni[0].energia_prodotta = 2000;
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
     scissioni[0].energia_assorbita = 0;

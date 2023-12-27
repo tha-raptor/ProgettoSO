@@ -58,7 +58,7 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
     
-    int risposta_inibitore = 1;
+    int risposta_inibitore = 0;
     for(; ;){
         usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
@@ -70,8 +70,9 @@ int main(int agrc, char **argv){
         }
         else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
-            if(msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR | IPC_NOWAIT) == -1)
-                risposta_inibitore = 0;
+            if(msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR | IPC_NOWAIT) == -1){
+                risposta_inibitore = 1;
+            }
             else
                 risposta_inibitore = atoi(msg_fork.mtext);
             if(risposta_inibitore){

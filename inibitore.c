@@ -34,6 +34,7 @@ int main(int argc, char **argv){
     int shmid = atoi(argv[2]);
     struct msgbuf msg_shared_inib, msg_fork;
     msg_fork.mtype = 20;
+    struct msgbuf lettura_identificazione_handl;
    
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
 
@@ -53,20 +54,24 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
 
-    float livello_energia, livello_scissioni;
+    float livello_energia;
     float soglia_massima = 0.75;
 
     while(1){
         if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
-            livello_scissioni = ((float)scissioni[0].scissioni / 5000);
             printf("livello_energia: %f\n", livello_energia);
-            //printf("livello_scissioni: %f\n", livello_scissioni);
+            
             if(livello_energia < soglia_massima){ //tutto a posto
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
+                //atomo deve dirgli quanta energia ha prodotto nella scissione
+                while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+                    scissioni[1].attivazioni += 1;
+                    scissioni[1].scorie += 1;
+                }
                 kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
             }
         }

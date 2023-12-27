@@ -24,6 +24,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia prodotta: %d\n", scissioni[1].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[1].energia_consumata);
     printf("scissioni: %d\n", scissioni[1].scissioni);
+    printf("energia assorbita: %d\n", scissioni[1].energia_assorbita);
     
     //calcolo assolute
     scissioni[0].attivazioni += scissioni[1].attivazioni;
@@ -46,6 +47,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia prodotta: %d\n", scissioni[0].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[0].energia_consumata);
     printf("scissioni: %d\n", scissioni[0].scissioni);
+     printf("energia assorbita: %d\n", scissioni[0].energia_assorbita);
      printf("\n--------------------\n");
     //azzero le stats relative
    
@@ -55,7 +57,6 @@ int check_terminazioni(struct stat_scissione *scissioni){
     int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
     if(energia_disponibile < 0)
         return -1; //blackout
-    //if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
     if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
         return -2; //explode
     return 0; //si prosegue con la simulazione

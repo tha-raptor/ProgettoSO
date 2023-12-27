@@ -58,11 +58,12 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
     
-    int risposta_inibitore = 0;
+    int risposta_inibitore;
     for(; ;){
         usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
             while ((error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
+                //print_message(&lettura_identificazione);
                 //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
                 scissioni[1].attivazioni += 1;
                 kill(atoi(lettura_identificazione.mtext), SIGUSR1);
@@ -70,13 +71,10 @@ int main(int agrc, char **argv){
         }
         else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
-            if(msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR | IPC_NOWAIT) == -1){
-                risposta_inibitore = 1;
-            }
-            else
-                risposta_inibitore = atoi(msg_fork.mtext);
+            msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR);
+            risposta_inibitore = atoi(msg_fork.mtext);
             if(risposta_inibitore){
-                while((error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
+                while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
                     //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
                     scissioni[1].attivazioni += 1;
                     kill(atoi(lettura_identificazione.mtext), SIGUSR1);

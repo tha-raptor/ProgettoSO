@@ -288,6 +288,7 @@ int main(){
         if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
+            //kill(pid_attivatore, SIGUSR1); //notifica attivatore che master ha finito di scrivere
         }
         else //blackout o explode
             flag = 0;

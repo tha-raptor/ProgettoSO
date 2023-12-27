@@ -52,10 +52,11 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){
-    int energia_disponibile =scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
+    int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
     if(energia_disponibile < 0)
         return -1; //blackout
-    if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
+    //if(scissioni[0].energia_prodotta > ENERGY_EXPLODE_THRESHOLD)
+    if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
         return -2; //explode
     return 0; //si prosegue con la simulazione
 }
@@ -210,7 +211,7 @@ int main(){
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
-    scissioni[0].energia_prodotta = 2000;
+    scissioni[0].energia_prodotta = 0;
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
     scissioni[0].energia_assorbita = 0;
@@ -288,7 +289,6 @@ int main(){
         if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
-            //kill(pid_attivatore, SIGUSR1); //notifica attivatore che master ha finito di scrivere
         }
         else //blackout o explode
             flag = 0;

@@ -54,30 +54,20 @@ int main(int argc, char **argv){
     //printf("[inibitore] inizio anche io simulazione\n");
 
     float livello_energia, livello_scissioni;
-    float soglia_massima = 0.40;
+    float soglia_massima = 0.75;
 
     while(1){
         if(inibitore->flag_inib){
             pause();
-            livello_energia = ((float)scissioni[0].energia_prodotta / ENERGY_EXPLODE_THRESHOLD);
+            livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
             livello_scissioni = ((float)scissioni[0].scissioni / 5000);
             printf("livello_energia: %f\n", livello_energia);
             //printf("livello_scissioni: %f\n", livello_scissioni);
-            if(livello_energia > soglia_massima || livello_scissioni > soglia_massima){
-                sprintf(msg_fork.mtext, "%d", 0); //non forkare -> situazione pericolosa
-                if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
-                    perror("");
-                    err_exit("msgsnd 0 inibitore -> attivatore\n");
-                }
-                printf("mandato 0\n");
+            if(livello_energia < soglia_massima){ //tutto a posto
+                kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                sprintf(msg_fork.mtext, "%d", 1); //continua a forkare -> situazione non pericolosa
-                if(msgsnd(msgid, &msg_fork, sizeof(msg_fork), 0) == -1){
-                    perror("");
-                    err_exit("msgsnd 1 inibitore -> attivatore\n");
-                }
-                printf("mandato 1\n");
+                kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
             }
         }
     }

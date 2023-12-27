@@ -9,29 +9,55 @@ extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
+struct stat_scissione *scissioni = NULL;
+int msgid;
+
 void handler_sigurs_uno(){
+    struct msgbuf lettura_identificazione_handl;
+    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+            //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+            scissioni[1].attivazioni += 1;
+            kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
+    }
+}
+
+void handler_sigurs_due(){
+    struct msgbuf lettura_identificazione_handl;
+    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+            //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+            scissioni[1].attivazioni += 1;
+            scissioni[1].scorie += 1;
+    }
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs;
+    struct sigaction sa_sigurs, sa_sigurs_due;
     sa_sigurs.sa_handler = &handler_sigurs_uno;
+    sa_sigurs_due.sa_handler = &handler_sigurs_due;
     sa_sigurs.sa_flags = 0;
+    sa_sigurs_due.sa_flags = 0;
 
     sigset_t mask_sigurs_uno, mask_sigurs_due;
     if(sigemptyset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs_uno");
 
+     if(sigemptyset(&mask_sigurs_due) == -1)
+        err_exit("sigemptyset su mask_sigurs_due");
+
     sa_sigurs.sa_mask = mask_sigurs_uno;
+    sa_sigurs_due.sa_mask = mask_sigurs_due;
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
+     if(sigaction(SIGUSR2, &sa_sigurs_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS2\n");
 }
 
 int main(int agrc, char **argv){
     int semid = atoi(argv[0]);
-    int msgid = atoi(argv[1]);
+    msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
+    scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     struct msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
     int error_msgrcv;
 
@@ -58,7 +84,6 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
     
-    int risposta_inibitore;
     for(; ;){
         usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
@@ -71,17 +96,8 @@ int main(int agrc, char **argv){
         }
         else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
-            msgrcv(msgid, &msg_fork, MSG_SIZE_IDENT, 20, MSG_NOERROR);
-            risposta_inibitore = atoi(msg_fork.mtext);
-            if(risposta_inibitore){
-                while( (error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
-                    //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
-                    scissioni[1].attivazioni += 1;
-                    kill(atoi(lettura_identificazione.mtext), SIGUSR1);
-                }
-            }
+            pause();
         }
-        //pause(); //provvisorio
     }
     exit(EXIT_SUCCESS);
 }

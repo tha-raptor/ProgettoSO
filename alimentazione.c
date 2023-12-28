@@ -72,7 +72,7 @@ int main(int argc, char **argv){
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione alimentazione\n");
     //printf("[alimentazione] inizio anche io simulazione\n");
-    int i = 0;
+
     for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI
@@ -80,8 +80,6 @@ int main(int argc, char **argv){
             srand((unsigned int) counter_creazione + 1); // setto il seed
             if(getpid() == parent_pid)
                 child_pid = fork();  
-                rintf("frocio n%d", getpid());
-
             switch(child_pid){
                 case -1:
                     error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);

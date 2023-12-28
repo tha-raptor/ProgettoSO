@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 #include "definizioni.h"
 #include "libscissione.h"
 #include <string.h>
@@ -7,6 +8,24 @@
 extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
+int shmid_inib=0; //id della sh di inibitore
+
+void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
+    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
+    /*if (inibitore->start_inib)
+    printf("HANDLER ALIMENTAZIONE\n");
+    {
+        if (inibitore->flag_inib==1)
+        {
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("Inibitore spento\n");
+        }else
+        {
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("Inibitore acceso\n");
+        }
+    }*/
+}
 
 int main(int argc, char **argv){
     int error_msgrcv;
@@ -25,6 +44,22 @@ int main(int argc, char **argv){
     pid_t parent_pid = getpid();
     pid_t child_pid;
     int counter_creazione = 0;
+    struct msgbuf msg_shared_inib;
+
+    if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 12, MSG_NOERROR) == -1)
+        err_exit("Msgrcv master -> inibitore");
+    shmid_inib = atoi(msg_shared_inib.mtext);
+
+    //sengale Cambiamento Inibitore
+     struct sigaction sa_SIGINT;
+     //sa_SIGINT.sa_handler = &handler_FlagInibitore;
+     sa_SIGINT.sa_flags = 0;
+     sigset_t mask_SIGINT;
+    if(sigemptyset(&mask_SIGINT) == -1) //Segnale in input
+        err_exit("sigemptyset su mask_SIGINT");
+    sa_SIGINT.sa_mask = mask_SIGINT;
+     if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)
+        err_exit("sigaction per SIGINT");       
 
     //manuale linux
     struct timespec sleep_time;
@@ -37,14 +72,16 @@ int main(int argc, char **argv){
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione alimentazione\n");
     //printf("[alimentazione] inizio anche io simulazione\n");
-
+    int i = 0;
     for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI
             //printf("\n[alimentazione %d] creo un atomo\n", getpid());
             srand((unsigned int) counter_creazione + 1); // setto il seed
             if(getpid() == parent_pid)
-                child_pid = fork();
+                child_pid = fork();  
+                rintf("frocio n%d", getpid());
+
             switch(child_pid){
                 case -1:
                     error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);

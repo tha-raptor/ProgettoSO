@@ -11,6 +11,7 @@ extern void err_exit(char *);
 
 struct stat_scissione *scissioni = NULL;
 int msgid;
+int shmid_inib=0;
 
 void handler_sigurs_uno(){
     struct msgbuf lettura_identificazione_handl;
@@ -25,28 +26,53 @@ void handler_sigurs_due(){
   
 }
 
+void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
+    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
+   if (inibitore->flag_inib)
+    {printf("HANDLER ATT\n");
+        if (inibitore->flag_inib==1)
+        {
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("Inibitore spento\n");
+        }else
+        {
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("Inibitore acceso\n");
+        }
+    }
+}
+
+
 void handle_sig(){
-    struct sigaction sa_sigurs, sa_sigurs_due;
+    struct sigaction sa_sigurs, sa_sigurs_due,sa_SIGINT;
     sa_sigurs.sa_handler = &handler_sigurs_uno;
     sa_sigurs_due.sa_handler = &handler_sigurs_due;
+    sa_SIGINT.sa_handler = &handler_FlagInibitore;
     sa_sigurs.sa_flags = 0;
     sa_sigurs_due.sa_flags = 0;
+    sa_SIGINT.sa_flags = 0;
 
-    sigset_t mask_sigurs_uno, mask_sigurs_due;
+    sigset_t mask_sigurs_uno, mask_sigurs_due,mask_SIGINT;
     if(sigemptyset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs_uno");
 
      if(sigemptyset(&mask_sigurs_due) == -1)
         err_exit("sigemptyset su mask_sigurs_due");
+     if(sigemptyset(&mask_SIGINT) == -1)
+        err_exit("sigemptyset su mask_SIGINT");
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
     sa_sigurs_due.sa_mask = mask_sigurs_due;
+    sa_SIGINT.sa_mask = mask_SIGINT;
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
-     if(sigaction(SIGUSR2, &sa_sigurs_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGUSR2, &sa_sigurs_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS2\n");
+    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGINT\n");
 }
+
 
 int main(int agrc, char **argv){
     int semid = atoi(argv[0]);
@@ -71,7 +97,7 @@ int main(int agrc, char **argv){
         err_exit("Msgrcv master -> attivatore");
 
     //CONTROLLARE SE POSTO GIUSTO
-    int shmid_inib = atoi(msg_shared_inib.mtext);
+     shmid_inib = atoi(msg_shared_inib.mtext);
     struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_attivatore = getpid();
 
@@ -80,8 +106,10 @@ int main(int agrc, char **argv){
     //printf("[attivatore] inizio anche io simulazione\n");
     
     for(; ;){
+        //printf("Flag DA attivatore %d\n",inibitore->flag_inib);
         usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
+             printf("Flag DA attivatore A %d\n",inibitore->flag_inib);
             while ((error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
                 //print_message(&lettura_identificazione);
                 //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
@@ -90,6 +118,7 @@ int main(int agrc, char **argv){
             }
         }
         else{ //flag_inib = 1
+         printf("Flag DA <ttivatore> %d\n",inibitore->flag_inib);
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
         }

@@ -16,6 +16,8 @@ extern void err_exit(char *);
 
 int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
+int idShInibitore=0; //id della sh di inibitore
+
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n---STATS RELATIVE---\n");
@@ -69,6 +71,24 @@ void handler_sigursdue(){
     flag = 0;
     if(kill(-getpgid(getpid()), SIGTERM) == -1)
         err_exit("kill group_pid\n");
+}
+
+void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
+    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(idShInibitore, NULL, 0);
+        printf("\t\t\tHANDLER MA\n");
+        if (inibitore->flag_inib==1)
+        {   
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("------>Inibitore spento\n");
+        }else
+        {
+            inibitore->flag_inib = !inibitore->flag_inib;
+            printf("------>Inibitore acceso\n");
+        }
+}
+
+void handlerNeg(){
+    printf("Non puoi modificare inibitore");
 }
 
 void uccidi_processi(int semid, int msgid, int shmid){
@@ -151,8 +171,8 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     free(argvAtomo);
 }
 
-void handle_sig(){
-    struct sigaction sa_sigterm, sa_sigursdue;
+void handle_sig(){ //Funzione per dichiarare e gestire tutti i segnali del master
+   struct sigaction sa_sigterm, sa_sigursdue;
     sa_sigterm.sa_handler = &ignora_sigterm;
     sa_sigterm.sa_flags = 0;
     sa_sigursdue.sa_handler = &handler_sigursdue;
@@ -167,7 +187,6 @@ void handle_sig(){
 
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)
         err_exit("sigaction per SIGTERM");
-    
     if(sigaction(SIGUSR2, &sa_sigursdue, NULL) == -1)
         err_exit("sigaction per SIGURS2");
 }
@@ -188,7 +207,7 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid, int shmid_inib){
 
 int main(){
     struct msgbuf message_tutti, notifica_attivatore,
-     msg_inib_inib, msg_inib_atomo, msg_inib_attiv;
+     msg_inib_inib, msg_inib_atomo, msg_inib_attiv,msg_inib_alim;
     pid_t master_pid = getpid();
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo
     int semid_isimulaz, msgid, shmid, shmid_inib; //semid semafoto master
@@ -197,6 +216,7 @@ int main(){
     arg_simulazione.val = 0;
     printf("[master %d]\n", getpid());
     handle_sig();
+    
 
     //SEMAFORI
     if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
@@ -205,7 +225,7 @@ int main(){
         err_exit("semctl con SETVAL su semid_isimulaz\n");
     if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
-
+        
     //SHM
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget stats");
@@ -228,11 +248,10 @@ int main(){
     struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->flag_inib = 0;
     inibitore->operazione = NULL;
-
+    idShInibitore=shmid_inib; //salvataggio sh inibitore
     //MSG_QUEUE
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
-
     init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
 
     //SI NOTIFICA SULLA CODA
@@ -251,7 +270,12 @@ int main(){
     msg_inib_attiv.mtype = 11; //messaggio a attivatore con idshm inib
     sprintf(msg_inib_attiv.mtext, "%d", shmid_inib);
     if(msgsnd(msgid, &msg_inib_attiv, sizeof(msg_inib_attiv), 0) == -1 )
-        err_exit("Msg snd master -> atomo\n");
+        err_exit("Msg snd master -> attivatore\n");
+    
+    msg_inib_alim.mtype = 12; //messaggio a attivatore con idshm inib
+    sprintf(msg_inib_alim.mtext, "%d", shmid_inib);
+    if(msgsnd(msgid, &msg_inib_alim, sizeof(msg_inib_alim), 0) == -1 )
+        err_exit("Msg snd master -> alimentatore\n");
         
     //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
     if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
@@ -268,16 +292,36 @@ int main(){
         err_exit("reserveSem inizializzazione master\n");
 
     //PRE-INIZIO SIMULAZ FLAG INIBITORE
-    char si_no;
+    char si_no; //Esistenza inibitore
     printf("Inibitore (y/n):");
     do{
         scanf("%c", &si_no);
     }while(si_no != 'y' && si_no != 'n');
     inibitore->flag_inib = si_no == 'y' ? 1: 0;
-
     printf("---------\n");
     printf("[inib : %d]\n", inibitore->flag_inib );
     printf("---------\n");
+    
+     struct sigaction sa_SIGINT;
+     
+    if(inibitore->flag_inib)
+    {
+    sa_SIGINT.sa_handler = &handler_FlagInibitore;
+    }else
+    {
+     sa_SIGINT.sa_handler = &handlerNeg;
+     
+    }
+    sa_SIGINT.sa_flags = 0;
+    sigset_t mask_sigterm, mask_sigursdue,mask_SIGINT;
+    if(sigemptyset(&mask_SIGINT) == -1)
+        err_exit("sigemptyset su mask_sigursdue");
+    sa_SIGINT.sa_mask = mask_SIGINT;
+
+    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)
+        err_exit("sigaction per SIGINT");
+
+
 
     //SEMAFORO INIZIO SIMULAZ (RILASCIA TUTTI I PROCESSI)
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)

@@ -12,7 +12,7 @@ compile:
 	gcc alimentazione.o libscissione.o -o alimentazione
 	gcc inibitore.o libscissione.o -o inibitore
 	gcc master.o libscissione.o -o master
-
+	
 start:
 	./master 
 	

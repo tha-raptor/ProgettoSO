@@ -17,11 +17,18 @@ extern void err_exit(char *);
 struct stat_scissione *scissioni = NULL;
 
 void handler_fork(){
+
+//printf("sono pazzo\n");
 }
+
 
 void handler_sigterm(){
     shmdt(scissioni);
     exit(EXIT_SUCCESS);
+}
+
+void handler_FlagInibitore(){
+
 }
 
 void print_message(struct msgbuf *message){
@@ -29,19 +36,28 @@ void print_message(struct msgbuf *message){
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs, sa_sigterm;
+    struct sigaction sa_sigurs, sa_sigterm,sa_SIGINT;
     sa_sigurs.sa_handler = &handler_fork;
     sa_sigurs.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
+    sa_SIGINT.sa_handler = &handler_FlagInibitore;
+    sa_SIGINT.sa_flags = 0;
 
-    sigset_t mask_sigurs, mask_sigterm;
+    sigset_t mask_sigurs, mask_sigterm,mask_SIGINT;
     if(sigemptyset(&mask_sigurs) == -1)
         err_exit("sigemptyset su mask_sigurs");
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
+         if(sigemptyset(&mask_SIGINT) == -1)
+        err_exit("sigemptyset su mask_SIGINT");
     sa_sigurs.sa_mask = mask_sigurs;
     sa_sigterm.sa_mask = mask_sigterm;
+    sa_SIGINT.sa_mask = mask_SIGINT;
+
+    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS1\n");    
+
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
@@ -65,6 +81,7 @@ int main(int argc, char **argv){
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
+    struct msgbuf msg_shared_inib;
     //printf("[atomo %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
@@ -79,6 +96,8 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione atomo\n");
         //printf("[atomo] inizio anche io simulazione\n");
     }
+
+
 
     identificazione(msgid); //capire perchè non posso spostarla
     //printf("[atomo %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);
@@ -126,6 +145,7 @@ int main(int argc, char **argv){
             case 0:
                 execve("./atomo", argv_figlio_1, envp);
                 err_exit("Errore execve atomo figlio 1\n");
+                break;
             default:
                 scissioni[1].scissioni++;
                 int energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);

@@ -13,6 +13,20 @@ void handler_FlagInibitore(){
     
 }
 
+void handle_sig(){
+    //sengale Cambiamento Inibitore
+
+    struct sigaction sa_SIGINT;
+    sa_SIGINT.sa_handler = &handler_FlagInibitore;
+    sa_SIGINT.sa_flags = 0;
+    sigset_t mask_SIGINT;
+    if(sigemptyset(&mask_SIGINT) == -1) //Segnale in input
+        err_exit("sigemptyset su mask_SIGINT");
+    sa_SIGINT.sa_mask = mask_SIGINT;
+    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)
+        err_exit("sigaction per SIGINT");     
+}
+
 int main(int argc, char **argv){
     int error_msgrcv;
     struct msgbuf message;
@@ -29,18 +43,9 @@ int main(int argc, char **argv){
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
     pid_t parent_pid = getpid();
     pid_t child_pid;
-    int counter_creazione = 0;
+    int counter_creazione = 0;  
 
-    //sengale Cambiamento Inibitore
-     struct sigaction sa_SIGINT;
-     sa_SIGINT.sa_handler = &handler_FlagInibitore;
-     sa_SIGINT.sa_flags = 0;
-     sigset_t mask_SIGINT;
-    if(sigemptyset(&mask_SIGINT) == -1) //Segnale in input
-        err_exit("sigemptyset su mask_SIGINT");
-    sa_SIGINT.sa_mask = mask_SIGINT;
-     if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)
-        err_exit("sigaction per SIGINT");       
+    handle_sig();
 
     //manuale linux
     struct timespec sleep_time;

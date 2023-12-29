@@ -46,13 +46,13 @@ struct stat_scissione{
     int energia_prodotta;
     int energia_consumata;
     int scorie;
-    int energia_assorbita; //da inibitore
-    //int log_inibitore; //da inibitore
+    int energia_assorbita; 
+    char **log_inibitore;
 };
 
 struct stat_inibitore{
     int flag_inib;
-    char *operazione;
+    int num_operazioni;
     int pid_attivatore;
     int pid_inibitore;
 };

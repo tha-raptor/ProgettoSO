@@ -15,10 +15,7 @@ struct stat_inibitore *inibitore = NULL;
 void handler_sigurs_uno(){
 }
 
-void handler_flag_inibitore(){ //attivazione e spegnimento inibitore
-    /*printf(" [inib] Inib prima: %d\n", inibitore->flag_inib);
-    inibitore->flag_inib = !(inibitore->flag_inib);
-    printf(" [inib] Inib dopo: %d\n", inibitore->flag_inib);*/
+void handler_flag_inibitore(){
 }
 
 void handle_sig(){

@@ -9,12 +9,8 @@ extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
 
-struct stat_inibitore *inibitore = NULL;
-
-void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
-    /*printf(" [alim] Inib prima: %d\n", inibitore->flag_inib);
-    inibitore->flag_inib = !(inibitore->flag_inib);
-    printf(" [alim] Inib dopo: %d\n", inibitore->flag_inib);*/
+void handler_FlagInibitore(){ 
+    
 }
 
 int main(int argc, char **argv){
@@ -34,13 +30,6 @@ int main(int argc, char **argv){
     pid_t parent_pid = getpid();
     pid_t child_pid;
     int counter_creazione = 0;
-    struct msgbuf msg_shared_inib;
-
-    if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 12, MSG_NOERROR) == -1)
-        err_exit("Msgrcv master -> inibitore");
-    int shmid_inib = atoi(msg_shared_inib.mtext);
-
-    inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
 
     //sengale Cambiamento Inibitore
      struct sigaction sa_SIGINT;

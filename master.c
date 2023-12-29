@@ -265,11 +265,6 @@ int main(){
     if(msgsnd(msgid, &msg_inib_attiv, sizeof(msg_inib_attiv), 0) == -1 )
         err_exit("Msg snd master -> attivatore\n");
     
-    msg_inib_alim.mtype = 12; //messaggio a alimentazione con idshm inib
-    sprintf(msg_inib_alim.mtext, "%d", shmid_inib);
-    if(msgsnd(msgid, &msg_inib_alim, sizeof(msg_inib_alim), 0) == -1 )
-        err_exit("Msg snd master -> alimentazione\n");
-        
     //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
     if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
         uccidi_processi(semid_isimulaz, msgid, shmid);

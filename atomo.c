@@ -58,7 +58,6 @@ void handle_sig(){
     if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");    
 
-
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
     
@@ -67,12 +66,15 @@ void handle_sig(){
 }
 
 void identificazione(int msgid){
+    //bloccare sigint
     struct msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
-    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1)
-        err_exit("Msg snd identificazione atomo\n");
+    if(msgsnd(msgid, &msg_identificazione,  sizeof(msg_identificazione), 0) == -1){
+        perror("Atomo");
+    }
+    //risbloccare sigint
 }
 
 int main(int argc, char **argv){
@@ -96,8 +98,6 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione atomo\n");
         //printf("[atomo] inizio anche io simulazione\n");
     }
-
-
 
     identificazione(msgid); //capire perchè non posso spostarla
     //printf("[atomo %d] NUM_ATOMICO: %d\n", getpid(), NUM_ATOMICO);

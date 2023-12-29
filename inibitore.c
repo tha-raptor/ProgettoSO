@@ -9,36 +9,26 @@
 extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
-int  shmid_inib=0; //id della sh di inibitore
+
+struct stat_inibitore *inibitore = NULL;
 
 void handler_sigurs_uno(){
 }
 
-void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
-    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
-   if (inibitore->flag_inib)
-    {
-        printf("HANDLER INIB\n");
-        if (inibitore->flag_inib==1)
-        {
-            inibitore->flag_inib = !inibitore->flag_inib;
-            printf("Inibitore spento\n");
-        }else
-        {
-            inibitore->flag_inib = !inibitore->flag_inib;
-            printf("Inibitore acceso\n");
-        }
-    }
+void handler_flag_inibitore(){ //attivazione e spegnimento inibitore
+    /*printf(" [inib] Inib prima: %d\n", inibitore->flag_inib);
+    inibitore->flag_inib = !(inibitore->flag_inib);
+    printf(" [inib] Inib dopo: %d\n", inibitore->flag_inib);*/
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs,sa_SIGINT;
+    struct sigaction sa_sigurs,sa_sigint;
     sa_sigurs.sa_handler = &handler_sigurs_uno;
     sa_sigurs.sa_flags = 0;
-    sa_SIGINT.sa_handler = &handler_FlagInibitore;
-    sa_SIGINT.sa_flags = 0;
+    sa_sigint.sa_handler = &handler_flag_inibitore;
+    sa_sigint.sa_flags = 0;
 
-    sigset_t mask_sigurs_uno,mask_SIGINT;
+    sigset_t mask_sigurs_uno, mask_sigint;
     if(sigemptyset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs");
 
@@ -47,18 +37,13 @@ void handle_sig(){
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 
-
-    if(sigemptyset(&mask_SIGINT) == -1)
+    if(sigemptyset(&mask_sigint) == -1)
         err_exit("sigemptyset su mask_sigurs");
 
-    sa_SIGINT.sa_mask = mask_SIGINT;
+    sa_sigint.sa_mask = mask_sigint;
 
-    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");    
-
-
-
-    
 }
 
 int main(int argc, char **argv){
@@ -76,8 +61,8 @@ int main(int argc, char **argv){
     if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 10, MSG_NOERROR) == -1)
         err_exit("Msgrcv master -> inibitore");
 
-    shmid_inib = atoi(msg_shared_inib.mtext);
-    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
+    int shmid_inib = atoi(msg_shared_inib.mtext);
+    inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_inibitore = getpid();
 
     if(releaseSem(semid, 0, 1, 2) == -1)
@@ -91,13 +76,10 @@ int main(int argc, char **argv){
     float soglia_massima = 0.75;
 
     while(1){
-    
-        //if(inibitore->flag_inib){
-           
+        if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
-            printf("livello_energia: %f\n", livello_energia);
-            
+            //printf("livello_energia: %f\n", livello_energia);
             if(livello_energia < soglia_massima){ //tutto a posto
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
@@ -109,9 +91,7 @@ int main(int argc, char **argv){
                 }
                 kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
             }
-        //}
+        }
     }
-
-    //printf("------------------------>>> ciao bro io esco 1, %d", getpid());
     exit(EXIT_SUCCESS);
 }

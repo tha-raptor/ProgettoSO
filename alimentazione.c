@@ -8,23 +8,13 @@
 extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);
 extern void err_exit(char *);
-int shmid_inib=0; //id della sh di inibitore
+
+struct stat_inibitore *inibitore = NULL;
 
 void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
-    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
-    /*if (inibitore->start_inib)
-    printf("HANDLER ALIMENTAZIONE\n");
-    {
-        if (inibitore->flag_inib==1)
-        {
-            inibitore->flag_inib = !inibitore->flag_inib;
-            printf("Inibitore spento\n");
-        }else
-        {
-            inibitore->flag_inib = !inibitore->flag_inib;
-            printf("Inibitore acceso\n");
-        }
-    }*/
+    /*printf(" [alim] Inib prima: %d\n", inibitore->flag_inib);
+    inibitore->flag_inib = !(inibitore->flag_inib);
+    printf(" [alim] Inib dopo: %d\n", inibitore->flag_inib);*/
 }
 
 int main(int argc, char **argv){
@@ -48,11 +38,13 @@ int main(int argc, char **argv){
 
     if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 12, MSG_NOERROR) == -1)
         err_exit("Msgrcv master -> inibitore");
-    shmid_inib = atoi(msg_shared_inib.mtext);
+    int shmid_inib = atoi(msg_shared_inib.mtext);
+
+    inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
 
     //sengale Cambiamento Inibitore
      struct sigaction sa_SIGINT;
-     //sa_SIGINT.sa_handler = &handler_FlagInibitore;
+     sa_SIGINT.sa_handler = &handler_FlagInibitore;
      sa_SIGINT.sa_flags = 0;
      sigset_t mask_SIGINT;
     if(sigemptyset(&mask_SIGINT) == -1) //Segnale in input

@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 // TERMINAZIONE
-#define SIM_DURATION 10
+#define SIM_DURATION 15
 #define ENERGY_EXPLODE_THRESHOLD 15000
 //----------------------
 // INIZIALIZZAZIONE
@@ -16,7 +16,7 @@
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 600
+#define ENERGY_DEMAND 100
 #define STEP_ALIMENTAZIONE 900000000 //0.9
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10

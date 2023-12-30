@@ -8,26 +8,24 @@ struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
 
-
-void handler_sigurs_uno(){
+void forka_atomi(){
     struct msgbuf lettura_identificazione_handl;
     while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-            //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
-            scissioni[1].attivazioni += 1;
-            kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
+        //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+        scissioni[1].attivazioni += 1;
+        kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
     }
 }
 
+void handler_sigurs_uno(){
+    forka_atomi();
+}
+
 void handler_sigurs_due(){
-  
 }
 
-void handler_FlagInibitore(){ //attivazione e spegnimento inibitore
-    /*printf(" [att] Inib prima: %d\n", inibitore->flag_inib);
-    inibitore->flag_inib = !(inibitore->flag_inib);
-    printf(" [att] Inib dopo: %d\n", inibitore->flag_inib);*/
+void handler_FlagInibitore(){
 }
-
 
 void handle_sig(){
     struct sigaction sa_sigurs, sa_sigurs_due,sa_SIGINT;
@@ -90,20 +88,16 @@ int main(int agrc, char **argv){
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
-    
+
     for(; ;){
         usleep(STEP_ATTIVATORE);
         if(inibitore->flag_inib == 0){
-            while ((error_msgrcv = msgrcv(msgid, &lettura_identificazione, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT)) != -1){
-                //print_message(&lettura_identificazione);
-                //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
-                scissioni[1].attivazioni += 1;
-                kill(atoi(lettura_identificazione.mtext), SIGUSR1);
-            }
+            forka_atomi();
         }
         else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
+            //forka_atomi(); //qui o in handler sigurs_uno
         }
     }
     exit(EXIT_SUCCESS);

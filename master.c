@@ -16,7 +16,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia prodotta: %d\n", scissioni[1].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[1].energia_consumata);
     printf("scissioni: %d\n", scissioni[1].scissioni);
-    printf("energia assorbita: %d\n", scissioni[1].energia_assorbita);
+    printf("energia assorbita: %.2f\n", scissioni[1].energia_assorbita);
     printf("[ ");
     if(inibitore->num_operazioni > 0){
         operation_assolute++;
@@ -48,7 +48,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia prodotta: %d\n", scissioni[0].energia_prodotta);
     printf("energia consumata: %d\n", scissioni[0].energia_consumata);
     printf("scissioni: %d\n", scissioni[0].scissioni);
-    printf("energia assorbita: %d\n", scissioni[0].energia_assorbita);
+    printf("energia assorbita: %.2f\n", scissioni[0].energia_assorbita);
     printf("[ ");
     while(temp > 0){
         printf("operazione, ");
@@ -229,18 +229,13 @@ int main(){
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
     scissioni[0].energia_assorbita = 0;
-    scissioni[0].log_inibitore = NULL;
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
     scissioni[1].energia_assorbita = 0;
-    scissioni[1].log_inibitore = NULL;
    
-    /*for(int i = 0; i < 10; i++){
-        printf("log_inib[%d]: %s\n", i, scissioni[1].log_inibitore[i]);
-    }*/
 
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
         err_exit("shmget inib");

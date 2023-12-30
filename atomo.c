@@ -44,20 +44,24 @@ void identificazione(int msgid){
     if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) //blocco ricezione SIGINT per l'identificazione
         perror("Impossibile bloccare SIGINT\n");
     
-    if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1)
-        perror("Atomo");
+    if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1){
+         perror("Atomo");
+         exit(EXIT_FAILURE);
+    }
+       
 
     if(sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) //sblocco la ricezione di SIGINT
         perror("Impossibile risbloccare SIGINT\n");
 }
 
 int main(int argc, char **argv){
-    struct msgbuf message;
+    struct msgbuf message, msg_energy;
+    msg_energy.mtype = 30;
     int error_msgrcv;
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    struct msgbuf msg_shared_inib;
+    //struct msgbuf msg_shared_inib;
   
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
@@ -100,6 +104,7 @@ int main(int argc, char **argv){
         argv_figlio_2[3] = NULL;
         char *envp[1] = {NULL};
 
+        int energia_prodotta_rel;
         switch(fork()){
             case -1:
                 error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
@@ -117,7 +122,10 @@ int main(int argc, char **argv){
                 break;
             default:
                 scissioni[1].scissioni++;
-                int energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
+                energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
+                sprintf(msg_energy.mtext, "%d", energia_prodotta_rel);
+                if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
+                    err_exit("prova");
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");

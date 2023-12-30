@@ -18,16 +18,16 @@
 #define ENERGY_EXPLODE_THRESHOLD 15000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 5
+#define N_ATOMI_INIT 100
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 100
+#define ENERGY_DEMAND 1
 #define STEP_ALIMENTAZIONE 900000000 //0.9
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 20
+#define N_NUOVI_ATOMI 5
 
 //Dichiarazione semun MacOS-VM
 #if defined(__linux__)
@@ -52,7 +52,7 @@ struct stat_scissione{
     int energia_prodotta;
     int energia_consumata;
     int scorie;
-    int energia_assorbita; 
+    float energia_assorbita; 
     char **log_inibitore;
 };
 

@@ -64,20 +64,19 @@ int main(int argc, char **argv){
 
     float livello_energia;
     float soglia_massima = 0.75;
-   
+    struct msgbuf msg_energy;
     while(1){
         if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
             //printf("livello_energia: %f\n", livello_energia);
             if(livello_energia < soglia_massima){ //tutto a posto
+                while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
+                    scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
+                }
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                /*if(inibitore->num_operazioni == 0){
-                    scissioni[1].log_inibitore = (char **)realloc(scissioni[1].log_inibitore, sizeof(char *));
-                    scissioni[1].log_inibitore[0] = operazione;
-                }*/
                 //atomo deve dirgli quanta energia ha prodotto nella scissione
                 while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].attivazioni += 1;
@@ -86,6 +85,11 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
                 inibitore->num_operazioni++; //un'operazione in più
             }
+        }
+        else{
+            //o così oppure atomo non manda quando inib è 'n'
+            while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
+            
         }
     }
     exit(EXIT_SUCCESS);

@@ -16,7 +16,8 @@ extern void err_exit(char *);
 
 int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
- struct stat_inibitore *inibitore = NULL;
+struct stat_inibitore *inibitore = NULL;
+int operation_assolute = 0;
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
    
@@ -31,7 +32,12 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia consumata: %d\n", scissioni[1].energia_consumata);
     printf("scissioni: %d\n", scissioni[1].scissioni);
     printf("energia assorbita: %d\n", scissioni[1].energia_assorbita);
-   
+    printf("[ ");
+    if(inibitore->num_operazioni > 0){
+        operation_assolute++;
+        printf("operazione");
+    } 
+    printf(" ]\n");
     
     //calcolo assolute
     scissioni[0].attivazioni += scissioni[1].attivazioni;
@@ -41,13 +47,16 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[0].energia_consumata += scissioni[1].energia_consumata;
     scissioni[0].energia_assorbita += scissioni[1].energia_assorbita;
 
+    //azzero relative
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scorie = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].energia_assorbita = 0;
+    inibitore->num_operazioni = 0;
 
+    int temp = operation_assolute;
     printf("\n---STATS ASSOLUTE---\n");
     printf("attivazioni: %d\n", scissioni[0].attivazioni);
     printf("scorie: %d\n", scissioni[0].scorie);
@@ -55,9 +64,13 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia consumata: %d\n", scissioni[0].energia_consumata);
     printf("scissioni: %d\n", scissioni[0].scissioni);
     printf("energia assorbita: %d\n", scissioni[0].energia_assorbita);
+    printf("[ ");
+    while(temp > 0){
+        printf("operazione, ");
+        temp--;
+    }
+    printf(" ]\n");
     printf("\n--------------------\n");
-    //azzero le stats relative
-   
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){

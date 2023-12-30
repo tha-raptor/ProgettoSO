@@ -69,7 +69,6 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
 
-    int num_operation = 0;
     char *operazione = malloc(strlen("operazione") + 1); // +1 per il terminatore nullo
     strcpy(operazione, "operazione");
 
@@ -85,16 +84,17 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                inibitore->num_operazioni++;
-                scissioni[1].log_inibitore = (char **)realloc(scissioni[1].log_inibitore, (num_operation + 1) * sizeof(char *));
-                scissioni[1].log_inibitore[num_operation] = operazione;
+                /*if(inibitore->num_operazioni == 0){
+                    scissioni[1].log_inibitore = (char **)realloc(scissioni[1].log_inibitore, sizeof(char *));
+                    scissioni[1].log_inibitore[0] = operazione;
+                }*/
                 //atomo deve dirgli quanta energia ha prodotto nella scissione
                 while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].attivazioni += 1;
                     scissioni[1].scorie += 1;
                 }
                 kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
-                num_operation++;
+                inibitore->num_operazioni++; //un'operazione in più
             }
         }
     }

@@ -1,13 +1,4 @@
-#include <signal.h>
-#include <sys/msg.h>
-#include <sys/shm.h>
 #include "definizioni.h"
-#include "libscissione.h"
-#include <string.h>
-
-extern int releaseSem(int, int, int, int);
-extern int reserveSem(int, int, int, int);
-extern void err_exit(char *);
 
 void handler_FlagInibitore(){ 
     

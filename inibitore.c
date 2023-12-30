@@ -1,14 +1,4 @@
 #include "definizioni.h"
-#include "libscissione.h"
-#include <sys/msg.h>
-#include <sys/shm.h>
-#include <signal.h>
-#include <time.h>
-#include <string.h>
-
-extern int releaseSem(int, int, int, int);
-extern int reserveSem(int, int, int, int);
-extern void err_exit(char *);
 
 struct stat_inibitore *inibitore = NULL;
 

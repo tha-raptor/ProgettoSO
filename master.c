@@ -1,26 +1,11 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <sys/sem.h>
-#include <sys/msg.h>
-#include <errno.h>
-#include <sys/shm.h>
-#include "libscissione.h"
 #include "definizioni.h"
-
-extern int releaseSem(int, int, int, int);
-extern int reserveSem(int, int, int, int);
-extern void err_exit(char *);
 
 int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
-struct stat_inibitore *inibitore = NULL;
+struct stat_inibitore *inibitore = NULL; //globale perchè l'handler lo deve vedere
 int operation_assolute = 0;
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
-   
     printf("\n----\n");
     printf("Inib: %d", inibitore->flag_inib);
     printf("\n----\n");
@@ -96,7 +81,7 @@ void handler_flag_inibitore(){ //attivazione e spegnimento inibitore
 }
 
 void handler_neg(){
-    printf("\n| Non puoi modificare inibitore |\n");
+    printf("\n! Non puoi modificare inibitore !\n");
 }
 
 void uccidi_processi(int semid, int msgid, int shmid){

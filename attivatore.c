@@ -1,9 +1,4 @@
 #include "definizioni.h"
-#include "libscissione.h"
-#include <sys/shm.h>
-#include <sys/msg.h>
-#include <signal.h>
-#include <string.h>
 
 extern int releaseSem(int, int, int, int);
 extern int reserveSem(int, int, int, int);

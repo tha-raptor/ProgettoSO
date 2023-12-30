@@ -1,18 +1,4 @@
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/sem.h>
-#include <sys/msg.h>
-#include <sys/shm.h>
-#include <signal.h>
-#include <errno.h>
 #include "definizioni.h"
-#include "libscissione.h"
-#include <stdio.h>
-
-extern int releaseSem(int, int, int, int);
-extern int reserveSem(int, int, int, int);
-extern void err_exit(char *);
 
 struct stat_scissione *scissioni = NULL;
 

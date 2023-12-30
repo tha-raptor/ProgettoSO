@@ -1,8 +1,4 @@
 #include "definizioni.h"
-#include <sys/sem.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 int reserveSem(int semid, int semNum, int semOperation, int numSemafori){
     struct sembuf sops[numSemafori];

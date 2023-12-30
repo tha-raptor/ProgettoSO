@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 1
+#define ENERGY_DEMAND 600
 #define STEP_ALIMENTAZIONE 900000000 //0.9
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10

@@ -7,11 +7,11 @@ compile:
 	gcc -c alimentazione.c libscissione.c
 	gcc -c inibitore.c libscissione.c
 	gcc -c master.c libscissione.c
-	gcc atomo.o libscissione.o -o atomo
-	gcc attivatore.o libscissione.o -o attivatore
-	gcc alimentazione.o libscissione.o -o alimentazione
-	gcc inibitore.o libscissione.o -o inibitore
-	gcc master.o libscissione.o -o master
+	gcc -Wvla -Wextra -Werror atomo.o libscissione.o -o atomo
+	gcc -Wvla -Wextra -Werror attivatore.o libscissione.o -o attivatore
+	gcc -Wvla -Wextra -Werror alimentazione.o libscissione.o -o alimentazione
+	gcc -Wvla -Wextra -Werror inibitore.o libscissione.o -o inibitore
+	gcc -Wvla -Wextra -Werror master.o libscissione.o -o master
 	
 start:
 	./master 

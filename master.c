@@ -8,7 +8,7 @@ int operation_assolute = 0;
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n----\n");
     printf("Inib: %d", inibitore->flag_inib);
-    printf("\n----\n");
+    printf("\n----");
 
     printf("\n---STATS RELATIVE---\n");
     printf("attivazioni: %d\n", scissioni[1].attivazioni);
@@ -54,7 +54,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
         printf("operazione, ");
         temp--;
     }
-    printf(" ]\n");
+    printf(" ]");
     printf("\n--------------------\n");
 }
 

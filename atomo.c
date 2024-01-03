@@ -49,7 +49,6 @@ void identificazione(int msgid){
          exit(EXIT_FAILURE);
     }
        
-
     if(sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) //sblocco la ricezione di SIGINT
         perror("Impossibile risbloccare SIGINT\n");
 }
@@ -61,7 +60,6 @@ int main(int argc, char **argv){
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    //struct msgbuf msg_shared_inib;
   
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
     
@@ -77,7 +75,7 @@ int main(int argc, char **argv){
         //printf("[atomo] inizio anche io simulazione\n");
     }
 
-    identificazione(msgid); //capire perchè non posso spostarla
+    identificazione(msgid);
     pause();
    
     if(NUM_ATOMICO > MIN_N_ATOMICO){
@@ -121,12 +119,12 @@ int main(int argc, char **argv){
                 err_exit("Errore execve atomo figlio 1\n");
                 break;
             default:
-                scissioni[1].scissioni++;
                 energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
                 sprintf(msg_energy.mtext, "%d", energia_prodotta_rel);
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
+                scissioni[1].scissioni++;
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }

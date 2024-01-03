@@ -65,6 +65,7 @@ int main(int argc, char **argv){
     float livello_energia;
     float soglia_massima = 0.75;
     struct msgbuf msg_energy;
+    
     while(1){
         if(inibitore->flag_inib){
             pause();
@@ -89,7 +90,6 @@ int main(int argc, char **argv){
         else{
             //o così oppure atomo non manda quando inib è 'n'
             while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
-            
         }
     }
     exit(EXIT_SUCCESS);

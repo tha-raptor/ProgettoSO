@@ -209,7 +209,6 @@ int main(){
     arg_simulazione.val = 0;
     printf("[master %d]\n", getpid());
     handle_sig();
-    
 
     //SEMAFORI
     if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)

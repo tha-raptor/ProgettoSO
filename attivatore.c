@@ -7,11 +7,15 @@ extern void err_exit(char *);
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
+int attivazioni = 0;
 
 void forka_atomi(){
+    int flag_attivatore = 1;
     struct msgbuf lettura_identificazione_handl;
-    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-        //printf("Manderò SIGUR A %d\n", atoi(lettura_identificazione.mtext));
+    while(flag_attivatore && (msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1)){
+        printf("att: %d\n", attivazioni);
+        attivazioni++;
+        flag_attivatore = attivazioni < MAX_ATTIVAZIONI ? 1 : 0;
         scissioni[1].attivazioni += 1;
         kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
     }

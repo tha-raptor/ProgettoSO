@@ -7,15 +7,12 @@ extern void err_exit(char *);
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
-int attivazioni = 0;
 
 void forka_atomi(){
-    int flag_attivatore = 1;
     struct msgbuf lettura_identificazione_handl;
-    while(flag_attivatore && (msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1)){
-        printf("att: %d\n", attivazioni);
-        attivazioni++;
-        flag_attivatore = attivazioni < MAX_ATTIVAZIONI ? 1 : 0;
+    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+        //printf("qui\n");
+        //perror("err: ");
         scissioni[1].attivazioni += 1;
         kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
     }
@@ -32,33 +29,32 @@ void handler_FlagInibitore(){
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs, sa_sigurs_due,sa_SIGINT;
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old);
+    struct sigaction sa_sigurs, sa_sigurs_due;
     sa_sigurs.sa_handler = &handler_sigurs_uno;
     sa_sigurs_due.sa_handler = &handler_sigurs_due;
-    sa_SIGINT.sa_handler = &handler_FlagInibitore;
     sa_sigurs.sa_flags = 0;
     sa_sigurs_due.sa_flags = 0;
-    sa_SIGINT.sa_flags = 0;
 
-    sigset_t mask_sigurs_uno, mask_sigurs_due, mask_SIGINT;
-    if(sigemptyset(&mask_sigurs_uno) == -1)
+    sigset_t mask_sigurs_uno, mask_sigurs_due;
+    if(sigfillset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs_uno");
+    if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1);
 
-     if(sigemptyset(&mask_sigurs_due) == -1)
+    if(sigfillset(&mask_sigurs_due) == -1)
         err_exit("sigemptyset su mask_sigurs_due");
-     if(sigemptyset(&mask_SIGINT) == -1)
-        err_exit("sigemptyset su mask_SIGINT");
+    if(sigdelset(&mask_sigurs_due, SIGTERM) == -1);
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
     sa_sigurs_due.sa_mask = mask_sigurs_due;
-    sa_SIGINT.sa_mask = mask_SIGINT;
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
     if(sigaction(SIGUSR2, &sa_sigurs_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS2\n");
-    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGINT\n");
 }
 
 
@@ -95,14 +91,9 @@ int main(int agrc, char **argv){
 
     for(; ;){
         usleep(STEP_ATTIVATORE);
-        if(inibitore->flag_inib == 0){
-            forka_atomi();
-        }
-        else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
             //forka_atomi(); //qui o in handler sigurs_uno
-        }
     }
     exit(EXIT_SUCCESS);
 }

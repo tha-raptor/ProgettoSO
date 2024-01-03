@@ -9,28 +9,22 @@ void handler_flag_inibitore(){
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs,sa_sigint;
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old);
+    struct sigaction sa_sigurs;
     sa_sigurs.sa_handler = &handler_sigurs_uno;
     sa_sigurs.sa_flags = 0;
-    sa_sigint.sa_handler = &handler_flag_inibitore;
-    sa_sigint.sa_flags = 0;
-
-    sigset_t mask_sigurs_uno, mask_sigint;
-    if(sigemptyset(&mask_sigurs_uno) == -1)
+    sigset_t mask_sigurs_uno;
+    if(sigfillset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs");
-
+    sigdelset(&mask_sigurs_uno, SIGTERM);
     sa_sigurs.sa_mask = mask_sigurs_uno;
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 
-    if(sigemptyset(&mask_sigint) == -1)
-        err_exit("sigemptyset su mask_sigurs");
-
-    sa_sigint.sa_mask = mask_sigint;
-
-    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGURS1\n");    
 }
 
 int main(int argc, char **argv){
@@ -88,8 +82,10 @@ int main(int argc, char **argv){
             }
         }
         else{
+            pause();
             //o così oppure atomo non manda quando inib è 'n'
             while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
+            kill(inibitore->pid_attivatore, SIGUSR1);
         }
     }
     exit(EXIT_SUCCESS);

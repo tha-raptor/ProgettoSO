@@ -19,17 +19,16 @@
 #define ENERGY_EXPLODE_THRESHOLD 15000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 50
+#define N_ATOMI_INIT 4
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 600
+#define ENERGY_DEMAND 1
 #define STEP_ALIMENTAZIONE 900000000 //0.9
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10
 #define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 5
-#define MAX_ATTIVAZIONI 50
+#define N_NUOVI_ATOMI 10
 
 //Dichiarazione semun MacOS-VM
 #if defined(__linux__)

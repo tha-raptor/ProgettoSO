@@ -18,10 +18,12 @@ void handle_sig(){
     sa_sigterm.sa_flags = 0;
 
     sigset_t mask_sigurs, mask_sigterm;
-    if(sigemptyset(&mask_sigurs) == -1)
+    if(sigfillset(&mask_sigurs) == -1)
         err_exit("sigemptyset su mask_sigurs");
+    sigdelset(&mask_sigurs, SIGTERM);
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
+
     sa_sigurs.sa_mask = mask_sigurs;
     sa_sigterm.sa_mask = mask_sigterm;
 
@@ -30,30 +32,30 @@ void handle_sig(){
     
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
+
 }
 
 void identificazione(int msgid){
     struct msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
-
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGINT);
-
-    if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) //blocco ricezione SIGINT per l'identificazione
-        perror("Impossibile bloccare SIGINT\n");
     
+    sigset_t new, old;
+    sigfillset(&new);
+    sigprocmask(SIG_BLOCK, &new, &old);
+
     if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1){
          perror("Atomo");
          exit(EXIT_FAILURE);
     }
-       
-    if(sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) //sblocco la ricezione di SIGINT
-        perror("Impossibile risbloccare SIGINT\n");
+    sigprocmask(SIG_SETMASK, &old, NULL);
 }
 
 int main(int argc, char **argv){
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old);
     struct msgbuf message, msg_energy;
     msg_energy.mtype = 30;
     int error_msgrcv;
@@ -62,9 +64,8 @@ int main(int argc, char **argv){
     int shmid = atoi(argv[2]);
   
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
-    
+   
     handle_sig();
-    
     if(argv[3] != NULL){ //init del master
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
@@ -76,6 +77,7 @@ int main(int argc, char **argv){
     }
 
     identificazione(msgid);
+    //printf("atomo identificato\n");
     pause();
    
     if(NUM_ATOMICO > MIN_N_ATOMICO){

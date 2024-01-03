@@ -171,10 +171,10 @@ void handle_sig(){ //Funzione per dichiarare e gestire tutti i segnali del maste
     sa_sigursdue.sa_handler = &handler_sigursdue;
     sa_sigursdue.sa_flags = 0;
     sigset_t mask_sigterm, mask_sigursdue;
-    if(sigemptyset(&mask_sigterm) == -1)
+    if(sigfillset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
     sa_sigterm.sa_mask = mask_sigterm;
-    if(sigemptyset(&mask_sigursdue) == -1)
+    if(sigfillset(&mask_sigursdue) == -1)
         err_exit("sigemptyset su mask_sigursdue");
     sa_sigursdue.sa_mask = mask_sigursdue;
 
@@ -296,8 +296,9 @@ int main(){
         sa_sigint.sa_handler = &handler_neg;
 
     sa_sigint.sa_flags = 0;
-    if(sigemptyset(&mask_sigint) == -1)
-        err_exit("sigemptyset su mask_sigint");
+    if(sigfillset(&mask_sigint) == -1)
+        err_exit("sigfillsu mask_SIGINT");
+    sigdelset(&mask_sigint, SIGTERM);
     sa_sigint.sa_mask = mask_sigint;
 
     if(sigaction(SIGINT, &sa_sigint, NULL) == -1)
@@ -307,8 +308,12 @@ int main(){
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione master\n");
 
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
     //INIZIO SIMULAZIONE
     for(int i = 0; i < SIM_DURATION && flag; i++){
+        sigprocmask(SIG_BLOCK, &new, &old);
         sleep(1);
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
@@ -317,6 +322,8 @@ int main(){
         }
         else //blackout o explode
             flag = 0;
+        sigprocmask(SIG_SETMASK, &old, NULL);
+
     }
     if(flag == 1)
         printf("[master dealloco] terminazione: timeout\n");

@@ -1,11 +1,17 @@
 #include "definizioni.h"
 
 struct stat_inibitore *inibitore = NULL;
+char *operazione = NULL;
 
 void handler_sigurs_uno(){
 }
 
 void handler_flag_inibitore(){
+}
+
+void handler_sigterm(){
+    free(operazione);
+    exit(EXIT_SUCCESS);
 }
 
 void handle_sig(){
@@ -33,7 +39,18 @@ void handle_sig(){
 
     sa_sigint.sa_mask = mask_sigint;
     if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGURS1\n");    
+        err_exit("sigaction su SIGURS1\n");  
+
+    struct sigaction sa_sigterm;
+    sa_sigterm.sa_handler = &handler_sigterm;
+    sa_sigterm.sa_flags = 0;  
+    sigset_t mask_sigterm;
+    if(sigemptyset(&mask_sigterm) == -1)
+        err_exit("sigemptyset su mask_sigterm");
+    sa_sigterm.sa_mask = mask_sigterm;
+
+    if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)
+        err_exit("sigaction per SIGTERM");
 }
 
 int main(int argc, char **argv){
@@ -62,7 +79,7 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
 
-    char *operazione = malloc(strlen("operazione") + 1); // +1 per il terminatore nullo
+    operazione = malloc(strlen("operazione") + 1); // +1 per il terminatore nullo
     strcpy(operazione, "operazione");
 
     float livello_energia;

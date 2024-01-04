@@ -84,13 +84,13 @@ int main(int argc, char **argv){
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
-        char *num_a1_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
+        char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
         sprintf(num_a1_char, "%d", num_atomico_figlio_1);
-        char *num_a2_char = (char*)malloc(sizeof(char) * 20);
+        char *num_a2_char = (char*)malloc(sizeof(char) * 3);
         sprintf(num_a2_char, "%d", num_atomico_figlio_2);
-        char *msgid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
+        char *msgid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
         sprintf(msgid_char, "%d", msgid);
-        char *shmid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
+        char *shmid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
         sprintf(shmid_char, "%d", shmid);
 
         char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 4);

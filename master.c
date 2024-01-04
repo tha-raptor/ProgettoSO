@@ -86,11 +86,11 @@ void uccidi_processi(){
 }
 
 void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
-    char *argv_semid = (char *)malloc(sizeof(char) * 11); //inizializzazione malloc(?)
+    char *argv_semid = (char *)malloc(sizeof(char) * 11);
     sprintf(argv_semid, "%d", semid);
-    char *argv_msgid = (char*)malloc(sizeof(char) * 20); 
+    char *argv_msgid = (char*)malloc(sizeof(char) * 11); 
     sprintf(argv_msgid, "%d", msgid);
-    char *argv_shmid = (char*)malloc(sizeof(char) * 20); 
+    char *argv_shmid = (char*)malloc(sizeof(char) * 11); 
     sprintf(argv_shmid, "%d", shmid);
     char *envp[] = {NULL};
     char *argv_processi[4] = {argv_semid, argv_msgid, argv_shmid, NULL};
@@ -127,8 +127,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
 
     pid_t child_pid;
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
-    char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
-
+    char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 3);
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
         srand((unsigned int) i + 1); // setto il seed
         if(getpid() == parent_pid)
@@ -152,8 +151,9 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     }
     free(argv_semid);
     free(argv_msgid);
-    free(NUM_ATOMICO);
+    free(argv_shmid);
     free(argvAtomo);
+    free(NUM_ATOMICO);
 }
 
 void handle_sig(){ //Funzione per dichiarare e gestire tutti i segnali del master

@@ -26,11 +26,11 @@ int main(int argc, char **argv){
 
     char *envp[] = {NULL};
     char **argvAtomo = (char **)malloc(sizeof(char*) * 4); 
-    char *argv_msgid = (char*)malloc(sizeof(char) * 20);
+    char *argv_msgid = (char*)malloc(sizeof(char) * 11);
     sprintf(argv_msgid, "%d", msgid);
-    char *argv_shmid = (char*)malloc(sizeof(char) * 20);
+    char *argv_shmid = (char*)malloc(sizeof(char) * 11);
     sprintf(argv_shmid, "%d", shmid);
-    char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
+    char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 3);
     pid_t parent_pid = getpid();
     pid_t child_pid;
     int counter_creazione = 0;  

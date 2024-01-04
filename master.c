@@ -3,12 +3,15 @@
 int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
 struct stat_inibitore *inibitore = NULL; //globale perchè l'handler lo deve vedere
-int operation_assolute = 0;
+char _fork[2] = {'/', '\0'};
+char _assorb[2] = {'*', '\0'};
+
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
-    printf("\n----\n");
+   
+    printf("\n-------\n");
     printf("Inib: %d", inibitore->flag_inib);
-    printf("\n----");
+    printf("\n-------");
 
     printf("\n---STATS RELATIVE---\n");
     printf("attivazioni: %d\n", scissioni[1].attivazioni);
@@ -18,12 +21,27 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("scissioni: %d\n", scissioni[1].scissioni);
     printf("energia assorbita: %.2f\n", scissioni[1].energia_assorbita);
     printf("[ ");
-    if(inibitore->num_operazioni > 0){
-        operation_assolute++;
-        printf("operazione");
-    } 
+    if(inibitore->num_operazioni_fork > 0 && inibitore->num_operazioni_assorb > 0){
+        inibitore->num_operazioni_fork = 1;
+        inibitore->num_operazioni_assorb = 1;
+        printf("%s, %s", _fork, _assorb);
+    }
+    else if(inibitore->num_operazioni_fork > 0){
+        inibitore->num_operazioni_fork = 1;
+        inibitore->num_operazioni_assorb = 0;
+        printf("%s", _fork);
+    }
+    else if(inibitore->num_operazioni_assorb > 0){
+        inibitore->num_operazioni_fork = 0;
+        inibitore->num_operazioni_assorb = 1;
+        printf("%s", _assorb);
+    }
+    else{
+        inibitore->num_operazioni_fork = 0;
+        inibitore->num_operazioni_assorb = 0;
+    }
     printf(" ]\n");
-    
+
     //calcolo assolute
     scissioni[0].attivazioni += scissioni[1].attivazioni;
     scissioni[0].scorie += scissioni[1].scorie;
@@ -32,6 +50,27 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[0].energia_consumata += scissioni[1].energia_consumata;
     scissioni[0].energia_assorbita += scissioni[1].energia_assorbita;
 
+    int i  =  inibitore->num_operazioni_tot; //vecchie assolute
+    int operazioni_rel = (inibitore->num_operazioni_fork + inibitore->num_operazioni_assorb); //operazioni relative a questo giro
+    inibitore->num_operazioni_tot += operazioni_rel; //nuove assolute
+
+    if(operazioni_rel >= 1){
+        scissioni[0].log_inibitore = (char **)realloc(scissioni[0].log_inibitore, inibitore->num_operazioni_tot * sizeof(char *));
+        while( (i - 1)  <= (inibitore->num_operazioni_tot - 1)){
+            if(inibitore->num_operazioni_fork && inibitore->num_operazioni_assorb){
+                scissioni[0].log_inibitore[i] = _fork;
+                i++;
+                scissioni[0].log_inibitore[i] = _assorb;
+            }
+            else if(inibitore->num_operazioni_fork){
+                scissioni[0].log_inibitore[i] = _fork;
+            }
+            else{
+                scissioni[0].log_inibitore[i] = _assorb;
+            }
+            i++;
+        }
+    }
     //azzero relative
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
@@ -39,9 +78,9 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[1].scorie = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].energia_assorbita = 0;
-    inibitore->num_operazioni = 0;
+    inibitore->num_operazioni_fork = 0;
+    inibitore->num_operazioni_assorb = 0;
 
-    int temp = operation_assolute;
     printf("\n---STATS ASSOLUTE---\n");
     printf("attivazioni: %d\n", scissioni[0].attivazioni);
     printf("scorie: %d\n", scissioni[0].scorie);
@@ -50,9 +89,10 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("scissioni: %d\n", scissioni[0].scissioni);
     printf("energia assorbita: %.2f\n", scissioni[0].energia_assorbita);
     printf("[ ");
-    while(temp > 0){
-        printf("operazione, ");
-        temp--;
+    i = 0;
+    while(i < (inibitore->num_operazioni_tot - 1)){
+        printf("%s, ", scissioni[0].log_inibitore[i]);
+        i++;
     }
     printf(" ]");
     printf("\n--------------------\n");
@@ -211,6 +251,7 @@ int main(){
     union semun arg_simulazione, arg_inizializzazione;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0;
+
     printf("[master %d]\n", getpid());
 
     handle_sig();
@@ -236,12 +277,14 @@ int main(){
     scissioni[0].scissioni = 0;
     scissioni[0].scorie = 0;
     scissioni[0].energia_assorbita = 0;
+    scissioni[0].log_inibitore = NULL;
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].scorie = 0;
     scissioni[1].energia_assorbita = 0;
+    scissioni[1].log_inibitore = NULL;
    
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1){
         uccidi_processi();
@@ -251,7 +294,8 @@ int main(){
 
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->flag_inib = 0;
-    inibitore->num_operazioni = 0;
+    inibitore->num_operazioni_fork = 0;
+    inibitore->num_operazioni_assorb = 0;
 
     //MSG_QUEUE
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1){

@@ -1,7 +1,6 @@
 #include "definizioni.h"
 
 struct stat_inibitore *inibitore = NULL;
-char *operazione = NULL;
 
 void handler_sigurs_uno(){
 }
@@ -9,8 +8,7 @@ void handler_sigurs_uno(){
 void handler_flag_inibitore(){
 }
 
-void handler_sigterm(){
-    free(operazione);
+void handler_sigterm(){ 
     exit(EXIT_SUCCESS);
 }
 
@@ -79,9 +77,6 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //printf("[inibitore] inizio anche io simulazione\n");
 
-    operazione = malloc(strlen("operazione") + 1); // +1 per il terminatore nullo
-    strcpy(operazione, "operazione");
-
     float livello_energia;
     float soglia_massima = 0.75;
     struct msgbuf msg_energy;
@@ -91,6 +86,7 @@ int main(int argc, char **argv){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
             if(livello_energia < soglia_massima){ //tutto a posto
+                inibitore->num_operazioni_assorb++;
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
                 }
@@ -100,10 +96,8 @@ int main(int argc, char **argv){
                 while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].attivazioni += 1;
                     scissioni[1].scorie += 1;
-                    //kill(atoi(lettura_identificazione_handl.mtext), SIGTERM);
                 }
-                //perror("inib");
-                inibitore->num_operazioni++; //un'operazione in più
+                inibitore->num_operazioni_fork++; //un'operazione in più
                 kill(inibitore->pid_attivatore, SIGUSR2);
             }
         }

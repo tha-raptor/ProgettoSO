@@ -68,11 +68,11 @@ int main(int argc, char **argv){
     float livello_energia;
     float soglia_massima = 0.75;
     struct msgbuf msg_energy;
+
     while(1){ 
         if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
-            //printf("livello_energia: %f\n", livello_energia);
             if(livello_energia < soglia_massima){ //tutto a posto
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
@@ -80,7 +80,6 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                printf("else");
                 while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].attivazioni += 1;
                     scissioni[1].scorie += 1;

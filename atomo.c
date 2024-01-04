@@ -86,7 +86,7 @@ int main(int argc, char **argv){
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
         char *num_a1_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
         sprintf(num_a1_char, "%d", num_atomico_figlio_1);
-        char *num_a2_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
+        char *num_a2_char = (char*)malloc(sizeof(char) * 20);
         sprintf(num_a2_char, "%d", num_atomico_figlio_2);
         char *msgid_char = (char*)malloc(sizeof(char) * 20); //non so bene perchè 20, mi gustava
         sprintf(msgid_char, "%d", msgid);

@@ -1,17 +1,16 @@
 #include "definizioni.h"
 
 void handler_FlagInibitore(){ 
-    
 }
 
 void handle_sig(){
-    //sengale Cambiamento Inibitore
-
     struct sigaction sa_SIGINT;
     sa_SIGINT.sa_handler = &handler_FlagInibitore;
     sa_SIGINT.sa_flags = 0;
     sigset_t mask_SIGINT;
-    if(sigemptyset(&mask_SIGINT) == -1) //Segnale in input
+    if(sigfillset(&mask_SIGINT) == -1) //Segnale in input
+        err_exit("sigemptyset su mask_SIGINT");
+    if(sigdelset(&mask_SIGINT, SIGTERM) == -1) //Segnale in input
         err_exit("sigemptyset su mask_SIGINT");
     sa_SIGINT.sa_mask = mask_SIGINT;
     if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)

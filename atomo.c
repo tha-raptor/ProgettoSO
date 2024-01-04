@@ -11,6 +11,7 @@ void handler_sigterm(){
 }
 
 void handle_sig(){
+    
     struct sigaction sa_sigurs, sa_sigterm;
     sa_sigurs.sa_handler = &handler_fork;
     sa_sigurs.sa_flags = 0;
@@ -48,8 +49,6 @@ void identificazione(int msgid){
          perror("Atomo");
          exit(EXIT_FAILURE);
     }
-       
-
     if(sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) //sblocco la ricezione di SIGINT
         perror("Impossibile risbloccare SIGINT\n");
 }
@@ -65,10 +64,9 @@ int main(int argc, char **argv){
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    //struct msgbuf msg_shared_inib;
   
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
-    
+
     handle_sig();
     
     if(argv[3] != NULL){ //init del master
@@ -80,10 +78,9 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione atomo\n");
         //printf("[atomo] inizio anche io simulazione\n");
     }
-
     identificazione(msgid); //capire perchè non posso spostarla
     pause();
-   
+    
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
@@ -125,12 +122,17 @@ int main(int argc, char **argv){
                 err_exit("Errore execve atomo figlio 1\n");
                 break;
             default:
-                scissioni[1].scissioni++;
                 energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
                 sprintf(msg_energy.mtext, "%d", energia_prodotta_rel);
+                /*sigset_t new, old;
+                sigfillset(&new); //blocchiamo tutti i segnali tranne sigterm (terminazione)
+                sigdelset(&new, SIGTERM);
+                sigprocmask(SIG_BLOCK, &new, &old);*/
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
+                scissioni[1].scissioni++;
+                //sigprocmask(SIG_SETMASK, &old, NULL);
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }

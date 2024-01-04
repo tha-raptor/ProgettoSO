@@ -16,19 +16,22 @@ void handle_sig(){
     sa_sigint.sa_flags = 0;
 
     sigset_t mask_sigurs_uno, mask_sigint;
-    if(sigemptyset(&mask_sigurs_uno) == -1)
-        err_exit("sigemptyset su mask_sigurs");
+    if(sigfillset(&mask_sigurs_uno) == -1)
+        err_exit("sigfillset su mask_sigurs");
+    if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1)
+        err_exit("sigdelset su mask_sigurs");
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
 
     if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 
-    if(sigemptyset(&mask_sigint) == -1)
-        err_exit("sigemptyset su mask_sigurs");
+    if(sigfillset(&mask_sigint) == -1)
+        err_exit("sigfillyset su mask_sigurs");
+    if(sigdelset(&mask_sigint, SIGTERM) == -1)
+        err_exit("sigdelset su mask_sigurs");
 
     sa_sigint.sa_mask = mask_sigint;
-
     if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");    
 }
@@ -65,7 +68,7 @@ int main(int argc, char **argv){
     float livello_energia;
     float soglia_massima = 0.75;
     struct msgbuf msg_energy;
-    while(1){
+    while(1){ 
         if(inibitore->flag_inib){
             pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
@@ -77,13 +80,15 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                //atomo deve dirgli quanta energia ha prodotto nella scissione
+                printf("else");
                 while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].attivazioni += 1;
                     scissioni[1].scorie += 1;
+                    //kill(atoi(lettura_identificazione_handl.mtext), SIGTERM);
                 }
-                kill(inibitore->pid_attivatore, SIGUSR2); //situazione pericolosa
+                //perror("inib");
                 inibitore->num_operazioni++; //un'operazione in più
+                kill(inibitore->pid_attivatore, SIGUSR2);
             }
         }
         else{

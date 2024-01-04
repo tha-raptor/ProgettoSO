@@ -59,7 +59,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){
-    int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
+    int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita;
     if(energia_disponibile < 0)
         return -1; //blackout
     if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
@@ -243,7 +243,6 @@ int main(){
     scissioni[1].scorie = 0;
     scissioni[1].energia_assorbita = 0;
    
-
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1){
         uccidi_processi();
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
@@ -316,6 +315,7 @@ int main(){
     for(int i = 0; i < SIM_DURATION && flag; i++){
         sigprocmask(SIG_BLOCK, &new, &old);
         sleep(1);
+      
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;

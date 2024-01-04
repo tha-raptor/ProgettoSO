@@ -1,9 +1,5 @@
 #include "definizioni.h"
 
-extern int releaseSem(int, int, int, int);
-extern int reserveSem(int, int, int, int);
-extern void err_exit(char *);
-
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
@@ -37,13 +33,18 @@ void handle_sig(){
     sa_SIGINT.sa_flags = 0;
 
     sigset_t mask_sigurs_uno, mask_sigurs_due, mask_SIGINT;
-    if(sigemptyset(&mask_sigurs_uno) == -1)
-        err_exit("sigemptyset su mask_sigurs_uno");
-
-     if(sigemptyset(&mask_sigurs_due) == -1)
+    if(sigfillset(&mask_sigurs_uno) == -1)
+        err_exit("sigfillset su mask_sigurs_uno");
+    if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1)
+        err_exit("sigdelset su mask_sigurs_uno");
+    if(sigfillset(&mask_sigurs_due) == -1)
         err_exit("sigemptyset su mask_sigurs_due");
-     if(sigemptyset(&mask_SIGINT) == -1)
+    if(sigdelset(&mask_sigurs_due, SIGTERM))
+        err_exit("sigdelset su mask_sigurs_due");
+    if(sigfillset(&mask_SIGINT) == -1)
         err_exit("sigemptyset su mask_SIGINT");
+    if(sigdelset(&mask_SIGINT, SIGTERM))
+        err_exit("sigdelset su mask_SIGINT");
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
     sa_sigurs_due.sa_mask = mask_sigurs_due;
@@ -87,8 +88,8 @@ int main(int agrc, char **argv){
 
     for(; ;){
         usleep(STEP_ATTIVATORE);
-            kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
-            pause();
+        kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
+        pause();
     }
     exit(EXIT_SUCCESS);
 }

@@ -217,10 +217,11 @@ int main(){
         err_exit("semctl con SETVAL su semid_isimulaz\n");
     if(semctl(semid_isimulaz, 1, SETVAL, arg_simulazione) == -1) //inizializzo semaforo inizializzazzione a 0
         err_exit("semctl con SETVAL su semid_isimulaz\n");
-        
+    printf("semid: %d\n", semid_isimulaz);
     //SHM
     if((shmid = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1)
         err_exit("shmget stats");
+    printf("shmid: %d\n", shmid);
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     scissioni[0].attivazioni = 0;
     scissioni[0].energia_consumata = 0;
@@ -238,6 +239,7 @@ int main(){
 
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1)
         err_exit("shmget inib");
+    printf("shmid_inib: %d\n", shmid_inib);
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->flag_inib = 0;
     inibitore->num_operazioni = 0;
@@ -246,7 +248,7 @@ int main(){
     if((msgid = msgget(IPC_PRIVATE, IPC_CREAT | 0666 )) == -1)
         err_exit("Msgget\n");
     init_processi(master_pid, semid_isimulaz, msgid, shmid); //inizializza tutti i processi
-
+    printf("msgid: %d\n", msgid);
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
     //PRENDE IL MESSAGGIO E LO COMUNICA CON UN SEGNALE A MASTER CHE DEALLOCA TUTTO

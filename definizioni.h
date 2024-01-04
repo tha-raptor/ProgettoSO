@@ -14,7 +14,7 @@
 #include "libscissione.h"
 
 // TERMINAZIONE
-#define SIM_DURATION 15
+#define SIM_DURATION 1
 #define ENERGY_EXPLODE_THRESHOLD 15000
 //----------------------
 // INIZIALIZZAZIONE

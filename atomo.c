@@ -55,6 +55,10 @@ void identificazione(int msgid){
 }
 
 int main(int argc, char **argv){
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old);
     struct msgbuf message, msg_energy;
     msg_energy.mtype = 30;
     int error_msgrcv;

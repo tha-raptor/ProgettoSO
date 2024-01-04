@@ -68,10 +68,6 @@ int main(int agrc, char **argv){
 
     handle_sig();
 
-    notifica_master.mtype = 3;
-    sprintf(notifica_master.mtext, "%d", getpid());
-    if(msgsnd(msgid, &notifica_master, sizeof(notifica_master), 0) == -1)
-        err_exit("Msg snd identificazione attivatore\n");
     //printf("[messaggio mandato da attivatore]\n");
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione attivatore\n");
@@ -91,14 +87,8 @@ int main(int agrc, char **argv){
 
     for(; ;){
         usleep(STEP_ATTIVATORE);
-        if(inibitore->flag_inib == 0){
-            forka_atomi();
-        }
-        else{ //flag_inib = 1
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
-            //forka_atomi(); //qui o in handler sigurs_uno
-        }
     }
     exit(EXIT_SUCCESS);
 }

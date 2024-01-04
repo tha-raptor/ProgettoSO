@@ -87,9 +87,9 @@ int main(int argc, char **argv){
             }
         }
         else{
-            //o così oppure atomo non manda quando inib è 'n'
+            pause();
             while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
-            
+            kill(inibitore->pid_attivatore, SIGUSR1);
         }
     }
     exit(EXIT_SUCCESS);

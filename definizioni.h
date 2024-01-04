@@ -13,17 +13,16 @@
 
 #include "libscissione.h"
 
-
 // TERMINAZIONE
 #define SIM_DURATION 15
 #define ENERGY_EXPLODE_THRESHOLD 15000
 //----------------------
 // INIZIALIZZAZIONE
-#define N_ATOMI_INIT 4
+#define N_ATOMI_INIT 150
 #define N_ATOM_MAX 30
 //----------------------
 //GENERALI
-#define ENERGY_DEMAND 1
+#define ENERGY_DEMAND 10
 #define STEP_ALIMENTAZIONE 900000000 //0.9
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10
@@ -54,7 +53,6 @@ struct stat_scissione{
     int energia_consumata;
     int scorie;
     float energia_assorbita; 
-    char **log_inibitore;
 };
 
 struct stat_inibitore{
@@ -63,10 +61,3 @@ struct stat_inibitore{
     int pid_attivatore;
     int pid_inibitore;
 };
-
-/*
-To do:
-    - capire se sincronizz. master/attivatore è un problema?!
-    - uccidi processi si può migliorare
-*/
-

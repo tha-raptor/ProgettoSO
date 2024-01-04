@@ -11,8 +11,6 @@ int msgid;
 void forka_atomi(){
     struct msgbuf lettura_identificazione_handl;
     while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-        //printf("qui\n");
-        //perror("err: ");
         scissioni[1].attivazioni += 1;
         kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
     }
@@ -93,7 +91,6 @@ int main(int agrc, char **argv){
         usleep(STEP_ATTIVATORE);
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
-            //forka_atomi(); //qui o in handler sigurs_uno
     }
     exit(EXIT_SUCCESS);
 }

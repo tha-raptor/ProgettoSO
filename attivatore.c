@@ -8,9 +8,16 @@ struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
 
+extern char **environ;
+
 void forka_atomi(){
     struct msgbuf lettura_identificazione_handl;
-    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+
+    char *MSG_SIZE_IDENT_ENV = getenv("MSG_SIZE_IDENT");
+        if (MSG_SIZE_IDENT_ENV == NULL)
+            err_exit("getenv MSG_SIZE_IDENT");
+
+    while(msgrcv(msgid, &lettura_identificazione_handl, atoi(MSG_SIZE_IDENT_ENV), 1, MSG_NOERROR | IPC_NOWAIT) != -1){
         scissioni[1].attivazioni += 1;
         kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
     }
@@ -40,11 +47,12 @@ void handle_sig(){
     sigset_t mask_sigurs_uno, mask_sigurs_due;
     if(sigfillset(&mask_sigurs_uno) == -1)
         err_exit("sigemptyset su mask_sigurs_uno");
-    if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1);
-
+    if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1)
+        err_exit("sigemptyset su mask_sigurs_uno");
     if(sigfillset(&mask_sigurs_due) == -1)
         err_exit("sigemptyset su mask_sigurs_due");
-    if(sigdelset(&mask_sigurs_due, SIGTERM) == -1);
+    if(sigdelset(&mask_sigurs_due, SIGTERM) == -1)
+        err_exit("sigemptyset su mask_sigurs_due");
 
     sa_sigurs.sa_mask = mask_sigurs_uno;
     sa_sigurs_due.sa_mask = mask_sigurs_due;
@@ -56,7 +64,8 @@ void handle_sig(){
 }
 
 
-int main(int agrc, char **argv){
+int main(int agrc, char **argv, char **envp){
+
     int semid = atoi(argv[0]);
     msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -75,7 +84,11 @@ int main(int agrc, char **argv){
         err_exit("releaseSem inizializzazione attivatore\n");
     //printf("[attivatore %d] ho inizializzato, aspetto...\n", getpid());
 
-    if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 11, MSG_NOERROR) == -1)
+    char *MSG_SIZE_IDENT_ENV = getenv("MSG_SIZE_IDENT");
+        if (MSG_SIZE_IDENT_ENV == NULL)
+            err_exit("getenv MSG_SIZE_IDENT");
+    
+    if(msgrcv(msgid, &msg_shared_inib, atoi(MSG_SIZE_IDENT_ENV), 11, MSG_NOERROR) == -1)
         err_exit("Msgrcv master -> attivatore");
 
     //CONTROLLARE SE POSTO GIUSTO
@@ -87,8 +100,12 @@ int main(int agrc, char **argv){
         err_exit("reserveSem simulazione attivatore\n");
     //printf("[attivatore] inizio anche io simulazione\n");
 
+    char *STEP_ATTIVATORE_ENV = getenv("STEP_ATTIVATORE");
+    if (STEP_ATTIVATORE_ENV == NULL)
+        err_exit("getenv STEP_ATTIVATORE");
+    int STEP_ATTIVATORE_INT = atoi(STEP_ATTIVATORE_ENV);
     for(; ;){
-        usleep(STEP_ATTIVATORE);
+        usleep(STEP_ATTIVATORE_INT);
             kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
             pause();
     }

@@ -5,6 +5,9 @@ int flag = 1; //true
 struct stat_inibitore *inibitore = NULL; //globale perchè l'handler lo deve vedere
 int operation_assolute = 0;
 
+
+extern char **environ;
+
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n----\n");
     printf("Inib: %d", inibitore->flag_inib);
@@ -60,9 +63,12 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 
 int check_terminazioni(struct stat_scissione *scissioni){
     int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata;
+    char *ENERGY_EXPLODE_THRESHOLD_ENV = getenv("ENERGY_EXPLODE_THRESHOLD");
+    if(ENERGY_EXPLODE_THRESHOLD_ENV == NULL)
+        err_exit("getenv ENERGY_EXPLODE_THRESHOLD");
     if(energia_disponibile < 0)
         return -1; //blackout
-    if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
+    if(energia_disponibile > atoi(ENERGY_EXPLODE_THRESHOLD_ENV))
         return -2; //explode
     return 0; //si prosegue con la simulazione
 }
@@ -96,7 +102,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     sprintf(argv_msgid, "%d", msgid);
     char *argv_shmid = (char*)malloc(sizeof(char) * 20); 
     sprintf(argv_shmid, "%d", shmid);
-    char *envp[] = {NULL};
+    //char *envp[] = {NULL};
     char *argv_processi[4] = {argv_semid, argv_msgid, argv_shmid, NULL};
 
     switch(fork()){ //creazione attivatore
@@ -106,7 +112,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> attivatore", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./attivatore", argv_processi, envp);
+            execve("./attivatore", argv_processi, environ);
             err_exit("Exceve attivatore");
     }
     
@@ -117,7 +123,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> alimentazione", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./alimentazione", argv_processi, envp);
+            execve("./alimentazione", argv_processi, environ);
             err_exit("Exceve alimentazione");
     }
 
@@ -128,7 +134,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> inibitore", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./inibitore", argv_processi, envp);
+            execve("./inibitore", argv_processi, environ);
             err_exit("Exceve inibitore");
     }
 
@@ -136,7 +142,14 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 7);
 
-    for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
+    char *N_ATOMI_INIT_ENV = getenv("N_ATOMI_INIT");
+    if(N_ATOMI_INIT_ENV == NULL)
+        err_exit("getenv N_ATOMI_INIT");
+    char *N_ATOM_MAX_ENV = getenv("N_ATOM_MAX");
+    if(N_ATOM_MAX_ENV == NULL)
+        err_exit("getenv N_ATOM_MAX");
+
+    for(int i = 0; i < atoi(N_ATOMI_INIT_ENV); i++){ //creazione N_ATOMI_INIT processi atomo
         srand((unsigned int) i + 1); // setto il seed
         if(getpid() == parent_pid)
             child_pid = fork();
@@ -148,13 +161,13 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
                 print_protagonista_term("master -> atomo_init", getpid());
                 exit(EXIT_SUCCESS);
             case 0:  
-                sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX
+                sprintf(NUM_ATOMICO, "%d", (rand() % atoi(N_ATOM_MAX_ENV))+1); //random tra 1 e N_ATOM_MAX
                 argvAtomo[0] = NUM_ATOMICO;
                 argvAtomo[1] = argv_msgid;
                 argvAtomo[2] = argv_shmid;
                 argvAtomo[3] = argv_semid;
                 argvAtomo[4]= NULL;
-                execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
+                execve("./atomo", argvAtomo, environ); //argv = NUM_ATOMICO, environ = array variabili d'ambiente
                 err_exit("Exceve atomo\n");
         }
     }
@@ -199,6 +212,29 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid, int shmid_inib){
 }
 
 int main(){
+    FILE *configFile = fopen("config.txt", "r");
+    if(configFile == NULL)
+        err_exit("fopen config.txt");
+    
+    char line[256];
+    while (fgets(line, sizeof(line), configFile)!=NULL){ //leggo ogni riga del file di configurazione
+        if(line[strlen(line)-1] == '\n')    //rimuovo il carattere \n sostituendolo con \0
+            line[strlen(line)-1] = '\0';
+    
+        char *separator = strchr(line, '='); //cerco il carattere '='     es: N_ATOMI_INIT=10\0
+        if(separator != NULL){      //divido la stringa in name e value
+            *separator = '\0';        //in modo che contenga due stringhe es: N_ATOMI_INIT\010\0 
+            char *name = line;
+            char *value = separator + 1;
+
+            //sovrascrivo le variabili d'ambiente con i valori letti dal file di configurazione
+            if(setenv(name, value, 0) == -1){
+                err_exit("error setenv");
+            }
+        }
+    }
+    fclose(configFile);
+
     struct msgbuf message_tutti, notifica_attivatore,
     msg_inib_inib, msg_inib_atomo, msg_inib_attiv,msg_inib_alim;
     pid_t master_pid = getpid();
@@ -268,7 +304,11 @@ int main(){
         err_exit("Msg snd master -> attivatore\n");
     
     //MASTER ASPETTA CHE ATTIVATORE SI IDENTIFICHI (MTYPE = 3)
-    if(msgrcv(msgid, &notifica_attivatore, MSG_SIZE_IDENT, 3, MSG_NOERROR) == -1){
+    char *MSG_SIZE_IDENT_ENV = getenv("MSG_SIZE_IDENT");
+    if(MSG_SIZE_IDENT_ENV == NULL)
+        err_exit("getenv MSG_SIZE_IDENT");
+    
+    if(msgrcv(msgid, &notifica_attivatore, atoi(MSG_SIZE_IDENT_ENV), 3, MSG_NOERROR) == -1){
         uccidi_processi(semid_isimulaz, msgid, shmid);
         while (waitpid(-group_pid, NULL, 0)>0);
         dealloca_risorse(semid_isimulaz, msgid, shmid, shmid_inib);
@@ -277,7 +317,11 @@ int main(){
     int pid_attivatore = atoi(notifica_attivatore.mtext);
 
     //SEMAFORO FINE INIT 
-    int semaph_operation = N_ATOMI_INIT + 3;
+    char *N_ATOMI_INIT_ENV = getenv("N_ATOMI_INIT");
+    if(N_ATOMI_INIT_ENV == NULL)
+        err_exit("getenv N_ATOMI_INIT");
+    int semaph_operation = atoi(N_ATOMI_INIT_ENV) + 3;
+
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem inizializzazione master\n");
 
@@ -314,12 +358,18 @@ int main(){
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
     //INIZIO SIMULAZIONE
-    for(int i = 0; i < SIM_DURATION && flag; i++){
+    char *SIM_DURATION_ENV = getenv("SIM_DURATION");
+    if(SIM_DURATION_ENV == NULL)
+        err_exit("getenv SIM_DURATION");
+    char *ENERGY_DEMAND_ENV = getenv("ENERGY_DEMAND");
+    if(ENERGY_DEMAND_ENV == NULL)
+        err_exit("getenv ENERGY_DEMAND");
+    for(int i = 0; i < atoi(SIM_DURATION_ENV) && flag; i++){
         sigprocmask(SIG_BLOCK, &new, &old);
         sleep(1);
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
-            scissioni[1].energia_consumata = ENERGY_DEMAND;
+            scissioni[1].energia_consumata = atoi(ENERGY_DEMAND_ENV);
             print_stats(scissioni, semid_isimulaz);
         }
         else //blackout o explode

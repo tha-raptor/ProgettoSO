@@ -2,6 +2,7 @@
 
 struct stat_scissione *scissioni = NULL;
 
+extern char **environ;
 void handler_fork(){
 }
 
@@ -51,7 +52,7 @@ void identificazione(int msgid){
     sigprocmask(SIG_SETMASK, &old, NULL);
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv, char **envp){
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
@@ -79,8 +80,12 @@ int main(int argc, char **argv){
     identificazione(msgid);
     //printf("atomo identificato\n");
     pause();
-   
-    if(NUM_ATOMICO > MIN_N_ATOMICO){
+    
+    char *MIN_N_ATOMICO_ENV = getenv("MIN_N_ATOMICO");
+    if (MIN_N_ATOMICO_ENV == NULL)
+        err_exit("getenv MIN_N_ATOMICO");
+
+    if(NUM_ATOMICO > atoi(MIN_N_ATOMICO_ENV)){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
         char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
@@ -102,12 +107,16 @@ int main(int argc, char **argv){
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
         argv_figlio_2[3] = NULL;
-        char *envp[1] = {NULL};
+        //char *envp[1] = {NULL};
 
+        char *MSG_SIZE_IDENT_ENV = getenv("MSG_SIZE_IDENT");
+        if (MSG_SIZE_IDENT_ENV == NULL)
+            err_exit("getenv MSG_SIZE_IDENT");
+        
         int energia_prodotta_rel;
         switch(fork()){
             case -1:
-                error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
+                error_msgrcv = msgrcv(msgid, &message, atoi(MSG_SIZE_IDENT_ENV), 2, MSG_NOERROR);
                 if(error_msgrcv == -1){ //se ha dato errore la msgrcv
                     if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
                         err_exit("failure msgrcv"); //esci
@@ -117,7 +126,7 @@ int main(int argc, char **argv){
                     err_exit("kill verso master\n");
                 exit(EXIT_SUCCESS);
             case 0:
-                execve("./atomo", argv_figlio_1, envp);
+                execve("./atomo", argv_figlio_1, environ);
                 err_exit("Errore execve atomo figlio 1\n");
                 break;
             default:
@@ -127,7 +136,7 @@ int main(int argc, char **argv){
                     err_exit("prova");
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
                 scissioni[1].scissioni++;
-                execve("./atomo", argv_figlio_2, envp);
+                execve("./atomo", argv_figlio_2, environ);
                 err_exit("Errore execve atomo figlio 2\n");
         }
     }

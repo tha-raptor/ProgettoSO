@@ -56,7 +56,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 
     if(operazioni_rel >= 1){
         scissioni[0].log_inibitore = (char **)realloc(scissioni[0].log_inibitore, inibitore->num_operazioni_tot * sizeof(char *));
-        while( (i - 1)  <= (inibitore->num_operazioni_tot - 1)){
+        while( (i - 1) < (inibitore->num_operazioni_tot - 1)){
             if(inibitore->num_operazioni_fork && inibitore->num_operazioni_assorb){
                 scissioni[0].log_inibitore[i] = _fork;
                 i++;
@@ -90,7 +90,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia assorbita: %.2f\n", scissioni[0].energia_assorbita);
     printf("[ ");
     i = 0;
-    while(i < (inibitore->num_operazioni_tot - 1)){
+    while(i < inibitore->num_operazioni_tot){
         printf("%s, ", scissioni[0].log_inibitore[i]);
         i++;
     }

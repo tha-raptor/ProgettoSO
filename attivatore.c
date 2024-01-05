@@ -88,8 +88,17 @@ int main(int agrc, char **argv){
 
     for(; ;){
         usleep(STEP_ATTIVATORE);
-        kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
+        /*if(inibitore->flag_inib == 0){
+            //stoppare segnali
+            forka_atomi();
+        }
+        else{
+            kill(inibitore->pid_inibitore, SIGUSR1); //notifica inibitore che sta per forkare
+            pause();
+        }*/
+        kill(inibitore->pid_inibitore, SIGUSR1);
         pause();
+        
     }
     exit(EXIT_SUCCESS);
 }

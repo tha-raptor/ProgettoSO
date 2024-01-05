@@ -124,15 +124,15 @@ int main(int argc, char **argv){
             default:
                 energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
                 sprintf(msg_energy.mtext, "%d", energia_prodotta_rel);
-                /*sigset_t new, old;
-                sigfillset(&new); //blocchiamo tutti i segnali tranne sigterm (terminazione)
-                sigdelset(&new, SIGTERM);
-                sigprocmask(SIG_BLOCK, &new, &old);*/
-                if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
-                    err_exit("prova");
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
                 scissioni[1].scissioni++;
-                //sigprocmask(SIG_SETMASK, &old, NULL);
+                sigset_t new, old;
+                sigfillset(&new); //blocchiamo tutti i segnali tranne sigterm (terminazione)
+                sigdelset(&new, SIGTERM);
+                sigprocmask(SIG_BLOCK, &new, &old);
+                if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
+                    err_exit("prova");
+                sigprocmask(SIG_SETMASK, &old, NULL);
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }

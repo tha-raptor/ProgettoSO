@@ -250,9 +250,14 @@ int main(){
     int semid_isimulaz, msgid, shmid_stats, shmid_inib; //semid semafoto master
     union semun arg_simulazione, arg_inizializzazione;
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
-    arg_simulazione.val = 0;
+    arg_simulazione.val = 0; //inizializzo semaforo simulazione a 0
 
     printf("[master %d]\n", getpid());
+
+    printf("\n---- LEGENDA INIB ----\n");
+    printf("*: Energia assorbita\n");
+    printf("/: Calcola atomi come scorie\n");
+    printf("----------------------\n");
 
     handle_sig();
     
@@ -341,11 +346,11 @@ int main(){
 
     //PRE-INIZIO SIMULAZ FLAG INIBITORE
     char si_no; //Esistenza inibitore
-    printf("Inibitore (y/n):");
+    printf("\nInibitore (y/n):");
     do{
         scanf("%c", &si_no);
     }while(si_no != 'y' && si_no != 'n');
-    inibitore->flag_inib = si_no == 'y' ? 1: 0;
+    inibitore->flag_inib = si_no == 'y' ? 1: 0; //imposto flag variabile condivisa
 
     //SEMAFORO INIZIO SIMULAZ (RILASCIA TUTTI I PROCESSI)
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
@@ -359,15 +364,16 @@ int main(){
     for(int i = 0; i < SIM_DURATION && flag; i++){
         sigprocmask(SIG_BLOCK, &new, &old);
         sleep(1);
-      
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
             scissioni[1].energia_consumata = ENERGY_DEMAND;
             print_stats(scissioni, semid_isimulaz);
+            sigprocmask(SIG_SETMASK, &old, NULL);
         }
-        else //blackout o explode
+        else {//blackout o explode
             flag = 0;
-        sigprocmask(SIG_SETMASK, &old, NULL);
+            sigprocmask(SIG_SETMASK, &old, NULL);
+        }
     }
     if(flag == 1)
         printf("[master dealloco] terminazione: timeout\n");

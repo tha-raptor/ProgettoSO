@@ -78,13 +78,19 @@ int main(int argc, char **argv){
     //printf("[inibitore] inizio anche io simulazione\n");
 
     float livello_energia;
-    float soglia_massima = 0.75;
+    float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct msgbuf msg_energy;
 
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigfillset(&new);
+    sigdelset(&new, SIGTERM);
+
     while(1){ 
+        pause();
         if(inibitore->flag_inib){
-            pause();
-            livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata) / ENERGY_EXPLODE_THRESHOLD);
+            //pause();
+            livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);
             if(livello_energia < soglia_massima){ //tutto a posto
                 inibitore->num_operazioni_assorb++;
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
@@ -93,16 +99,12 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR1);
             }
             else{
-                while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-                    scissioni[1].attivazioni += 1;
-                    scissioni[1].scorie += 1;
-                }
                 inibitore->num_operazioni_fork++; //un'operazione in più
                 kill(inibitore->pid_attivatore, SIGUSR2);
             }
         }
         else{
-            pause();
+            //pause();
             while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
             kill(inibitore->pid_attivatore, SIGUSR1);
         }

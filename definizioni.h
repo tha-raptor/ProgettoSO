@@ -30,7 +30,7 @@
 #define N_NUOVI_ATOMI 25
 #define SOGLIA_PERICOLOSA 50 //percentuale
 
-//Dichiarazione semun MacOS-VM
+//Dichiarazione semun per VM
 #if defined(__linux__)
 union semun{
     int val;

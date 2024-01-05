@@ -13,42 +13,37 @@ void handler_sigterm(){
 }
 
 void handle_sig(){
-    struct sigaction sa_sigurs,sa_sigint;
-    sa_sigurs.sa_handler = &handler_sigurs_uno;
-    sa_sigurs.sa_flags = 0;
+    struct sigaction sa_sigusr, sa_sigint, sa_sigterm;
+    sa_sigusr.sa_handler = &handler_sigurs_uno;
+    sa_sigusr.sa_flags = 0;
     sa_sigint.sa_handler = &handler_flag_inibitore;
     sa_sigint.sa_flags = 0;
+    sa_sigterm.sa_handler = &handler_sigterm;
+    sa_sigterm.sa_flags = 0;  
 
-    sigset_t mask_sigurs_uno, mask_sigint;
+    //blocco tutti i segnali durante gli handler, tranne per SIGTERM
+    sigset_t mask_sigurs_uno, mask_sigint, mask_sigterm;
     if(sigfillset(&mask_sigurs_uno) == -1)
         err_exit("sigfillset su mask_sigurs");
     if(sigdelset(&mask_sigurs_uno, SIGTERM) == -1)
         err_exit("sigdelset su mask_sigurs");
-
-    sa_sigurs.sa_mask = mask_sigurs_uno;
-
-    if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGURS1\n");
-
     if(sigfillset(&mask_sigint) == -1)
         err_exit("sigfillyset su mask_sigurs");
     if(sigdelset(&mask_sigint, SIGTERM) == -1)
         err_exit("sigdelset su mask_sigurs");
-
-    sa_sigint.sa_mask = mask_sigint;
-    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGURS1\n");  
-
-    struct sigaction sa_sigterm;
-    sa_sigterm.sa_handler = &handler_sigterm;
-    sa_sigterm.sa_flags = 0;  
-    sigset_t mask_sigterm;
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
+
+    sa_sigint.sa_mask = mask_sigint;
+    sa_sigusr.sa_mask = mask_sigurs_uno;
     sa_sigterm.sa_mask = mask_sigterm;
 
+     if(sigaction(SIGUSR1, &sa_sigusr, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS1\n");
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)
         err_exit("sigaction per SIGTERM");
+    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS1\n");  
 }
 
 int main(int argc, char **argv){
@@ -63,7 +58,7 @@ int main(int argc, char **argv){
 
     handle_sig();
 
-    if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 10, MSG_NOERROR) == -1)
+    if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 10, MSG_NOERROR) == -1) //shmid di inibitore da master
         err_exit("Msgrcv master -> inibitore");
 
     int shmid_inib = atoi(msg_shared_inib.mtext);
@@ -72,41 +67,32 @@ int main(int argc, char **argv){
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione inibitore\n");
-    //printf("[inibitore %d] ho inizializzato, aspetto...\n", getpid());
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione inibitore");
-    //printf("[inibitore] inizio anche io simulazione\n");
 
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct msgbuf msg_energy;
 
-    sigset_t new, old;
-    sigemptyset(&new);
-    sigfillset(&new);
-    sigdelset(&new, SIGTERM);
-
     while(1){ 
         pause();
         if(inibitore->flag_inib){
-            //pause();
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);
             if(livello_energia < soglia_massima){ //tutto a posto
                 inibitore->num_operazioni_assorb++;
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
                 }
-                kill(inibitore->pid_attivatore, SIGUSR1);
+                kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
             }
             else{
-                inibitore->num_operazioni_fork++; //un'operazione in più
-                kill(inibitore->pid_attivatore, SIGUSR2);
+                inibitore->num_operazioni_fork++; 
+                kill(inibitore->pid_attivatore, SIGUSR2); //segnale -> attivatore per non far forkare
             }
         }
         else{
-            //pause();
-            while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1);
-            kill(inibitore->pid_attivatore, SIGUSR1);
+            while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1); //svuota la coda di messaggi perchè non assorbe energia
+            kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
         }
     }
     exit(EXIT_SUCCESS);

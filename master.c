@@ -2,17 +2,15 @@
 
 int term = 0; //nessuna condizione di terminazione
 int flag = 1; //true
-struct stat_inibitore *inibitore = NULL; //globale perchè l'handler lo deve vedere
+struct stat_inibitore *inibitore = NULL; //globale perchè l'handler deve vedere shm
 char _fork[2] = {'/', '\0'};
 char _assorb[2] = {'*', '\0'};
 
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
-   
     printf("\n-------\n");
     printf("Inib: %d", inibitore->flag_inib);
     printf("\n-------");
-
     printf("\n---STATS RELATIVE---\n");
     printf("attivazioni: %d\n", scissioni[1].attivazioni);
     printf("scorie: %d\n", scissioni[1].scorie);
@@ -50,34 +48,37 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[0].energia_consumata += scissioni[1].energia_consumata;
     scissioni[0].energia_assorbita += scissioni[1].energia_assorbita;
 
-    int i  =  inibitore->num_operazioni_tot; //vecchie assolute
-    int operazioni_rel = (inibitore->num_operazioni_fork + inibitore->num_operazioni_assorb); //operazioni relative a questo giro
-    inibitore->num_operazioni_tot += operazioni_rel; //nuove assolute
+    int i = inibitore->num_operazioni_tot; //vecchie assolute
+    int operazioni_rel = (inibitore->num_operazioni_fork + inibitore->num_operazioni_assorb); //operazioni relative (fork e assorbimento) a questo giro
+    inibitore->num_operazioni_tot += operazioni_rel; //nuove operazioni assolute
 
-    if(operazioni_rel >= 1){
+    //calcolo operazioni assolute
+    if(operazioni_rel >= 1){ //se inibitore è occorso almeno una volta
         scissioni[0].log_inibitore = (char **)realloc(scissioni[0].log_inibitore, inibitore->num_operazioni_tot * sizeof(char *));
-        while( (i - 1) < (inibitore->num_operazioni_tot - 1)){
-            if(inibitore->num_operazioni_fork && inibitore->num_operazioni_assorb){
+        while( (i - 1) < (inibitore->num_operazioni_tot - 1)){ //entry array log_inibitore [0, operazioni - 1]
+            if(inibitore->num_operazioni_fork && inibitore->num_operazioni_assorb){ //se sono occorse entrambi i tipi
                 scissioni[0].log_inibitore[i] = _fork;
-                i++;
+                i++; //qui avrò già allocato due posizioni
                 scissioni[0].log_inibitore[i] = _assorb;
             }
             else if(inibitore->num_operazioni_fork){
                 scissioni[0].log_inibitore[i] = _fork;
             }
-            else{
+            else{ //assorbimento
                 scissioni[0].log_inibitore[i] = _assorb;
             }
             i++;
         }
     }
     //azzero relative
+    //stats generali
     scissioni[1].attivazioni = 0;
     scissioni[1].energia_consumata = 0;
     scissioni[1].energia_prodotta = 0;
     scissioni[1].scorie = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].energia_assorbita = 0;
+    //stats inibitore
     inibitore->num_operazioni_fork = 0;
     inibitore->num_operazioni_assorb = 0;
 
@@ -90,7 +91,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("energia assorbita: %.2f\n", scissioni[0].energia_assorbita);
     printf("[ ");
     i = 0;
-    while(i < inibitore->num_operazioni_tot){
+    while(i < inibitore->num_operazioni_tot){ //stampo storico operazioni
         printf("%s, ", scissioni[0].log_inibitore[i]);
         i++;
     }
@@ -125,7 +126,7 @@ void uccidi_processi(){
         err_exit("kill group_pid\n");
 }
 
-void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
+void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     char *argv_semid = (char *)malloc(sizeof(char) * 11);
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 11); 
@@ -189,6 +190,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
                 err_exit("Exceve atomo\n");
         }
     }
+    //dealloco spazio in RAM
     free(argv_semid);
     free(argv_msgid);
     free(argv_shmid);
@@ -196,7 +198,7 @@ void init_processi(pid_t parent_pid, int semid, int msgid, int shmid){
     free(NUM_ATOMICO);
 }
 
-void handle_sig(){ //Funzione per dichiarare e gestire tutti i segnali del master
+void handle_sig(){ //funzione per dichiarare e gestire tutti i segnali del master
     struct sigaction sa_sigint;
     sigset_t mask_sigint;
     sa_sigint.sa_handler = &handler_flag_inibitore;
@@ -235,7 +237,7 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid, int shmid_inib){
     if(msgctl(msgid, IPC_RMID, NULL) == -1) //elimino la coda di messaggi
         err_exit("remove msg_identificazine con IPC_RMID\n");
 
-    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino shared memory stats
+    if(shmctl(shmid, IPC_RMID, 0) == -1) //elimino shared memory stats generali
         err_exit("remove shared memory stats con IPC_RMID\n");
 
     if(shmctl(shmid_inib, IPC_RMID, 0) == -1) //elimino shared memory inib
@@ -255,11 +257,11 @@ int main(){
     printf("[master %d]\n", getpid());
 
     printf("\n---- LEGENDA INIB ----\n");
-    printf("*: Energia assorbita\n");
-    printf("/: Calcola atomi come scorie\n");
+    printf("*: Assorbe energia\n");
+    printf("/: Non fa forkare Attivatore\n");
     printf("----------------------\n");
 
-    handle_sig();
+    handle_sig(); //gestione segnali
     
     //SEMAFORI
     if((semid_isimulaz = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 )) == -1)
@@ -290,7 +292,6 @@ int main(){
     scissioni[1].scorie = 0;
     scissioni[1].energia_assorbita = 0;
     scissioni[1].log_inibitore = NULL;
-   
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1){
         uccidi_processi();
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
@@ -309,7 +310,7 @@ int main(){
         err_exit("Msgget\n");
     }
 
-    init_processi(master_pid, semid_isimulaz, msgid, shmid_stats); //inizializza tutti i processi
+    lancia_processi(master_pid, semid_isimulaz, msgid, shmid_stats); //lancia tutti i processi
 
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
@@ -323,7 +324,7 @@ int main(){
         err_exit("Msg snd identificazione master\n");
     }
 
-    msg_inib_inib.mtype = 10; //messaggio a inibitore con idshm inib
+    msg_inib_inib.mtype = 10; //messaggio ad inibitore con id shm inib
     sprintf(msg_inib_inib.mtext, "%d", shmid_inib);
     if(msgsnd(msgid, &msg_inib_inib, sizeof(msg_inib_inib), 0) == -1 ){
         uccidi_processi();
@@ -331,7 +332,7 @@ int main(){
         err_exit("Msg snd master -> inib\n");
     }
 
-    msg_inib_attiv.mtype = 11; //messaggio a attivatore con idshm inib
+    msg_inib_attiv.mtype = 11; //messaggio ad attivatore con id shm inib
     sprintf(msg_inib_attiv.mtext, "%d", shmid_inib);
     if(msgsnd(msgid, &msg_inib_attiv, sizeof(msg_inib_attiv), 0) == -1){
         uccidi_processi();
@@ -344,8 +345,7 @@ int main(){
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem inizializzazione master\n");
 
-    //PRE-INIZIO SIMULAZ FLAG INIBITORE
-    char si_no; //Esistenza inibitore
+    char si_no;
     printf("\nInibitore (y/n):");
     do{
         scanf("%c", &si_no);
@@ -362,19 +362,21 @@ int main(){
 
     //INIZIO SIMULAZIONE
     for(int i = 0; i < SIM_DURATION && flag; i++){
-        sigprocmask(SIG_BLOCK, &new, &old);
+        sigprocmask(SIG_BLOCK, &new, &old);  //blocco SIGINT solo quando deve stampare
         sleep(1);
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
-            scissioni[1].energia_consumata = ENERGY_DEMAND;
-            print_stats(scissioni, semid_isimulaz);
-            sigprocmask(SIG_SETMASK, &old, NULL);
+            scissioni[1].energia_consumata = ENERGY_DEMAND; //preleva energia
+            print_stats(scissioni, semid_isimulaz); //stampa statistiche
+            sigprocmask(SIG_SETMASK, &old, NULL); //sblocco SIGINT
         }
         else {//blackout o explode
             flag = 0;
-            sigprocmask(SIG_SETMASK, &old, NULL);
+            sigprocmask(SIG_SETMASK, &old, NULL); //sblocco SIGINT
         }
     }
+
+    //stampa terminazione
     if(flag == 1)
         printf("[master dealloco] terminazione: timeout\n");
     else if(term == -1)
@@ -384,11 +386,11 @@ int main(){
     else
         printf("[master dealloco] terminazione: meltdown\n");
 
-    uccidi_processi();
+    uccidi_processi(); //manda SIGTERM a tutti i suoi figli
 
-    while (waitpid(-group_pid, NULL, 0)>0);
+    while (waitpid(-group_pid, NULL, 0)>0); //si assicura che tutti i figli (stesso group_pid) terminino
 
-    dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
+    dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib); //dealloca le risorse IPC
 
     exit(EXIT_SUCCESS);
 }

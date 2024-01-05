@@ -11,22 +11,22 @@ void handler_sigterm(){
 }
 
 void handle_sig(){
-    
-    struct sigaction sa_sigurs, sa_sigterm;
-    sa_sigurs.sa_handler = &handler_fork;
-    sa_sigurs.sa_flags = 0;
+    struct sigaction sa_sigusr_uno, sa_sigterm;
+    sa_sigusr_uno.sa_handler = &handler_fork;
+    sa_sigusr_uno.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
 
-    sigset_t mask_sigurs, mask_sigterm;
-    if(sigemptyset(&mask_sigurs) == -1)
-        err_exit("sigemptyset su mask_sigurs");
+    sigset_t mask_sigusr_uno, mask_sigterm;
+    if(sigemptyset(&mask_sigusr_uno) == -1)
+        err_exit("sigemptyset su mask_sigusr_uno");
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
-    sa_sigurs.sa_mask = mask_sigurs;
+
+    sa_sigusr_uno.sa_mask = mask_sigusr_uno;
     sa_sigterm.sa_mask = mask_sigterm;
 
-    if(sigaction(SIGUSR1, &sa_sigurs, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGUSR1, &sa_sigusr_uno, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
     
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
@@ -57,10 +57,10 @@ int main(int argc, char **argv){
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
-    sigprocmask(SIG_BLOCK, &new, &old);
-    struct msgbuf message, msg_energy;
+    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
+    struct msgbuf message, msg_energy; //messaggio che manda atomo per inibitore
     msg_energy.mtype = 30;
-    int error_msgrcv;
+
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -69,17 +69,15 @@ int main(int argc, char **argv){
 
     handle_sig();
     
-    if(argv[3] != NULL){ //init del master
+    if(argv[3] != NULL){
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione atomo\n");
-        //printf("[atomo] ho inizializzato, aspetto...\n");
         if(reserveSem(semid, 1, 1, 2) == -1)
             err_exit("reserveSem simulazione atomo\n");
-        //printf("[atomo] inizio anche io simulazione\n");
     }
-    identificazione(msgid); //capire perchè non posso spostarla
-    pause();
+    identificazione(msgid);
+    pause(); //aspetta segnale di attivatore
     
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
@@ -105,16 +103,14 @@ int main(int argc, char **argv){
         argv_figlio_2[3] = NULL;
         char *envp[1] = {NULL};
 
+        int error_msgrcv;
         int energia_prodotta_rel;
         switch(fork()){
             case -1:
-                error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
-                if(error_msgrcv == -1){ //se ha dato errore la msgrcv
-                    if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
-                        err_exit("failure msgrcv"); //esci
-                }
-                print_protagonista_term("atomo -> atomo", getpid());
-                if(kill(atoi(message.mtext), SIGUSR2 ) == -1)
+                if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
+                    err_exit("failure msgrcv"); //esci
+                print_protagonista_term("atomo -> atomo", getpid()); //
+                if(kill(atoi(message.mtext), SIGUSR2) == -1) //notifica master
                     err_exit("kill verso master\n");
                 exit(EXIT_SUCCESS);
             case 0:
@@ -122,17 +118,18 @@ int main(int argc, char **argv){
                 err_exit("Errore execve atomo figlio 1\n");
                 break;
             default:
-                energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2);
-                sprintf(msg_energy.mtext, "%d", energia_prodotta_rel);
+                energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
+                sprintf(msg_energy.mtext, "%d", energia_prodotta_rel); //preparo messaggio
+                //aggiorno mem condivisa
                 scissioni[1].energia_prodotta += energia_prodotta_rel;
                 scissioni[1].scissioni++;
                 sigset_t new, old;
-                sigfillset(&new); //blocchiamo tutti i segnali tranne sigterm (terminazione)
+                sigfillset(&new); 
                 sigdelset(&new, SIGTERM);
-                sigprocmask(SIG_BLOCK, &new, &old);
+                sigprocmask(SIG_BLOCK, &new, &old); //blocchiamo tutti i segnali tranne sigterm (terminazione)
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
-                sigprocmask(SIG_SETMASK, &old, NULL);
+                sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
                 execve("./atomo", argv_figlio_2, envp);
                 err_exit("Errore execve atomo figlio 2\n");
         }

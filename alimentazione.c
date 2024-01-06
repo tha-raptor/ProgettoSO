@@ -39,10 +39,6 @@ int main(int argc, char **argv){
 
     handle_sig();
 
-    char *N_NUOVI_ATOMI_ENV = getenv("N_NUOVI_ATOMI");
-    if (N_NUOVI_ATOMI_ENV == NULL)
-        err_exit("getenv N_NUOVI_ATOMI");
-    int N_NUOVI_ATOMI = atoi(N_NUOVI_ATOMI_ENV);
     //manuale linux
     struct timespec sleep_time;
     sleep_time.tv_sec = 0;          // secondi
@@ -53,6 +49,10 @@ int main(int argc, char **argv){
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione alimentazione\n");
 
+    char *N_NUOVI_ATOMI_ENV = getenv("N_NUOVI_ATOMI");
+    if (N_NUOVI_ATOMI_ENV == NULL)
+        err_exit("getenv N_NUOVI_ATOMI");
+    int N_NUOVI_ATOMI = atoi(N_NUOVI_ATOMI_ENV);
     for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI

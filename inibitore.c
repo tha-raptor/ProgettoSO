@@ -74,6 +74,7 @@ int main(int argc, char **argv){
     if (ENERGY_EXPLODE_THRESHOLD_ENV == NULL)
         err_exit("getenv ENERGY_EXPLODE_THRESHOLD");
     int ENERGY_EXPLODE_THRESHOLD = atoi(ENERGY_EXPLODE_THRESHOLD_ENV);
+    
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct msgbuf msg_energy;

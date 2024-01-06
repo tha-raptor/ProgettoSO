@@ -79,8 +79,8 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione atomo\n");
     }
     identificazione(msgid);
-    pause(); //aspetta segnale SIGUSR1 di attivatore
-    
+    pause(); //aspetta segnale SIGUSR1 di attivatores
+
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;

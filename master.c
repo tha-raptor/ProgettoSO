@@ -5,7 +5,7 @@ int flag = 1; //true
 struct stat_inibitore *inibitore = NULL; //globale perchè l'handler deve vedere shm
 char _fork[2] = {'/', '\0'};
 char _assorb[2] = {'*', '\0'};
-char **environ = NULL;
+extern char **environ;
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n-------\n");

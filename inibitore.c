@@ -1,7 +1,7 @@
 #include "definizioni.h"
 
 struct stat_inibitore *inibitore = NULL;
-char **environ;
+extern char **environ;
 void handler_sigurs_uno(){
 }
 

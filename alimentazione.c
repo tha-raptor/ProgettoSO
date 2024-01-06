@@ -1,6 +1,6 @@
 #include "definizioni.h"
 
-char **environ;
+extern char **environ;
 
 void handler_FlagInibitore(){ 
 }

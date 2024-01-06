@@ -1,7 +1,7 @@
 #include "definizioni.h"
 
 struct stat_inibitore *inibitore = NULL;
-
+char **environ;
 void handler_sigurs_uno(){
 }
 
@@ -70,10 +70,13 @@ int main(int argc, char **argv){
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione inibitore");
 
+    char *ENERGY_EXPLODE_THRESHOLD_ENV = getenv("ENERGY_EXPLODE_THRESHOLD");
+    if (ENERGY_EXPLODE_THRESHOLD_ENV == NULL)
+        err_exit("getenv ENERGY_EXPLODE_THRESHOLD");
+    int ENERGY_EXPLODE_THRESHOLD = atoi(ENERGY_EXPLODE_THRESHOLD_ENV);
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct msgbuf msg_energy;
-
     while(1){ 
         pause();
         if(inibitore->flag_inib){

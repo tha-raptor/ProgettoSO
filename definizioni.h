@@ -13,22 +13,12 @@
 
 #include "libscissione.h"
 
-// TERMINAZIONE
-#define SIM_DURATION 30
-#define ENERGY_EXPLODE_THRESHOLD 15000
-//----------------------
-// INIZIALIZZAZIONE
-#define N_ATOMI_INIT 150
-#define N_ATOM_MAX 30
-//----------------------
-//GENERALI
-#define ENERGY_DEMAND 1000
-#define STEP_ALIMENTAZIONE 900000000 //0.9
+#define SOGLIA_PERICOLOSA 50 //percentuale
+#define MSG_SIZE_IDENT 128
+#define STEP_ALIMENTAZIONE 900000000
 #define STEP_ATTIVATORE 100000
 #define MIN_N_ATOMICO 10
-#define MSG_SIZE_IDENT 128
-#define N_NUOVI_ATOMI 25
-#define SOGLIA_PERICOLOSA 50 //percentuale
+#define N_ATOM_MAX 30
 
 //Dichiarazione semun per VM
 #if defined(__linux__)

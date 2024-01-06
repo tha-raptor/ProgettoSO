@@ -4,6 +4,7 @@
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
+char **environ;
 
 void forka_atomi(){
     struct msgbuf lettura_identificazione_handl;

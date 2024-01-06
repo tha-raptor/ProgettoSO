@@ -5,7 +5,7 @@ int flag = 1; //true
 struct stat_inibitore *inibitore = NULL; //globale perchè l'handler deve vedere shm
 char _fork[2] = {'/', '\0'};
 char _assorb[2] = {'*', '\0'};
-
+char **environ = NULL;
 
 void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n-------\n");
@@ -100,10 +100,11 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
 }
 
 int check_terminazioni(struct stat_scissione *scissioni){
+    char *ENERGY_EXPLODE_THRESHOLD_ENV = getenv("ENERGY_EXPLODE_THRESHOLD");
     int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita;
     if(energia_disponibile < 0)
         return -1; //blackout
-    if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
+    if(energia_disponibile > atoi(ENERGY_EXPLODE_THRESHOLD_ENV))
         return -2; //explode
     return 0; //si prosegue con la simulazione
 }
@@ -126,14 +127,13 @@ void uccidi_processi(){
         err_exit("kill group_pid\n");
 }
 
-void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
+void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid, int N_ATOMI_INIT){
     char *argv_semid = (char *)malloc(sizeof(char) * 11);
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 11); 
     sprintf(argv_msgid, "%d", msgid);
     char *argv_shmid = (char*)malloc(sizeof(char) * 11); 
     sprintf(argv_shmid, "%d", shmid);
-    char *envp[] = {NULL};
     char *argv_processi[4] = {argv_semid, argv_msgid, argv_shmid, NULL};
 
     switch(fork()){ //creazione attivatore
@@ -142,7 +142,7 @@ void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> attivatore", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./attivatore", argv_processi, envp);
+            execve("./attivatore", argv_processi, environ);
             err_exit("Exceve attivatore");
     }
     
@@ -152,7 +152,7 @@ void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> alimentazione", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./alimentazione", argv_processi, envp);
+            execve("./alimentazione", argv_processi, environ);
             err_exit("Exceve alimentazione");
     }
 
@@ -162,13 +162,14 @@ void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
             print_protagonista_term("master -> inibitore", getpid());
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./inibitore", argv_processi, envp);
+            execve("./inibitore", argv_processi, environ);
             err_exit("Exceve inibitore");
     }
 
     pid_t child_pid;
     char **argvAtomo = (char **)malloc(sizeof(char*) * 5); 
     char *NUM_ATOMICO = (char*)malloc(sizeof(char) * 3);
+
     for(int i = 0; i < N_ATOMI_INIT; i++){ //creazione N_ATOMI_INIT processi atomo
         srand((unsigned int) i + 1); // setto il seed
         if(getpid() == parent_pid)
@@ -186,7 +187,7 @@ void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid){
                 argvAtomo[2] = argv_shmid;
                 argvAtomo[3] = argv_semid;
                 argvAtomo[4]= NULL;
-                execve("./atomo", argvAtomo, envp); //argv = NUM_ATOMICO, envp = NULL
+                execve("./atomo", argvAtomo, environ); //argv = NUM_ATOMICO, envp = environ
                 err_exit("Exceve atomo\n");
         }
     }
@@ -254,6 +255,29 @@ int main(){
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0; //inizializzo semaforo simulazione a 0
 
+    FILE *configFile = fopen("config.txt", "r");
+    if(configFile == NULL)
+        err_exit("fopen config.txt");
+    
+    char line[256];
+    while (fgets(line, sizeof(line), configFile)!=NULL){ //leggo ogni riga del file di configurazione
+        if(line[strlen(line)-1] == '\n')    //rimuovo il carattere \n sostituendolo con \0
+            line[strlen(line)-1] = '\0';
+    
+        char *separator = strchr(line, '='); //cerco il carattere '='
+        if(separator != NULL){      //divido la stringa in name e value
+            *separator = '\0';       //in modo che contenga due stringhe
+            char *name = line;
+            char *value = separator + 1;
+            printf("%s=%s\n",name, value);
+            //sovrascrivo le variabili d'ambiente con i valori letti dal file di configurazione
+            if(setenv(name, value, 0) == -1){
+                err_exit("error setenv");
+            }
+        }
+    }
+    fclose(configFile);
+
     printf("[master %d]\n", getpid());
 
     printf("\n---- LEGENDA INIB ----\n");
@@ -309,8 +333,11 @@ int main(){
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("Msgget\n");
     }
-
-    lancia_processi(master_pid, semid_isimulaz, msgid, shmid_stats); //lancia tutti i processi
+    char *N_ATOMI_INIT_ENV = getenv("N_ATOMI_INIT");
+    if(N_ATOMI_INIT_ENV == NULL)
+        err_exit("getenv N_ATOMI_INIT");
+    int N_ATOMI_INIT = atoi(N_ATOMI_INIT_ENV);
+    lancia_processi(master_pid, semid_isimulaz, msgid, shmid_stats, N_ATOMI_INIT); //lancia tutti i processi
 
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 
@@ -356,17 +383,24 @@ int main(){
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione master\n");
 
+    char *SIM_DURATION_ENV = getenv("SIM_DURATION");
+    if(SIM_DURATION_ENV == NULL)
+        err_exit("getenv SIM_DURATION");
+    char *ENERGY_DEMAND = getenv("ENERGY_DEMAND");
+    if(ENERGY_DEMAND == NULL)
+        err_exit("getenv ENERGY_DEMAND");
+
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
 
     //INIZIO SIMULAZIONE
-    for(int i = 0; i < SIM_DURATION && flag; i++){
+    for(int i = 0; i < atoi(SIM_DURATION_ENV) && flag; i++){
         sigprocmask(SIG_BLOCK, &new, &old);  //blocco SIGINT solo quando deve stampare
         sleep(1);
         term = check_terminazioni(scissioni);
         if(term == 0 && flag != 0){ //la simulazione prosegue
-            scissioni[1].energia_consumata = ENERGY_DEMAND; //preleva energia
+            scissioni[1].energia_consumata = atoi(ENERGY_DEMAND); //preleva energia
             print_stats(scissioni, semid_isimulaz); //stampa statistiche
             sigprocmask(SIG_SETMASK, &old, NULL); //sblocco SIGINT
         }

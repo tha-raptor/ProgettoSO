@@ -1,5 +1,7 @@
 #include "definizioni.h"
 
+char **environ;
+
 struct stat_scissione *scissioni = NULL;
 
 void handler_fork(){
@@ -68,7 +70,7 @@ int main(int argc, char **argv){
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
 
     handle_sig();
-    
+
     if(argv[3] != NULL){
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
@@ -77,7 +79,7 @@ int main(int argc, char **argv){
             err_exit("reserveSem simulazione atomo\n");
     }
     identificazione(msgid);
-    pause(); //aspetta segnale di attivatore
+    pause(); //aspetta segnale SIGUSR1 di attivatore
     
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
@@ -101,7 +103,7 @@ int main(int argc, char **argv){
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
         argv_figlio_2[3] = NULL;
-        char *envp[1] = {NULL};
+        //char *envp[1] = {NULL};
 
         int error_msgrcv;
         int energia_prodotta_rel;
@@ -114,7 +116,7 @@ int main(int argc, char **argv){
                     err_exit("kill verso master\n");
                 exit(EXIT_SUCCESS);
             case 0:
-                execve("./atomo", argv_figlio_1, envp);
+                execve("./atomo", argv_figlio_1, environ);
                 err_exit("Errore execve atomo figlio 1\n");
                 break;
             default:
@@ -130,7 +132,7 @@ int main(int argc, char **argv){
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
                 sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
-                execve("./atomo", argv_figlio_2, envp);
+                execve("./atomo", argv_figlio_2, environ);
                 err_exit("Errore execve atomo figlio 2\n");
         }
     }

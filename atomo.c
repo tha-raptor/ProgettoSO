@@ -3,8 +3,14 @@
 extern char **environ;
 
 struct stat_scissione *scissioni = NULL;
+int flag_comportamento_atomo;
 
 void handler_fork(){
+    //flag_comportamento_atomo = 1;
+}
+
+void handler_fork_scoria(){
+    flag_comportamento_atomo = 0;
 }
 
 void handler_sigterm(){
@@ -13,24 +19,34 @@ void handler_sigterm(){
 }
 
 void handle_sig(){
-    struct sigaction sa_sigusr_uno, sa_sigterm;
+    struct sigaction sa_sigusr_uno, sa_sigterm, sa_sigusr_due;
     sa_sigusr_uno.sa_handler = &handler_fork;
     sa_sigusr_uno.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
+    sa_sigusr_due.sa_handler = &handler_fork_scoria;
+    sa_sigusr_due.sa_flags = 0;
 
-    sigset_t mask_sigusr_uno, mask_sigterm;
-    if(sigemptyset(&mask_sigusr_uno) == -1)
+    sigset_t mask_sigusr_uno, mask_sigterm, mask_sigusr_due;
+    if(sigfillset(&mask_sigusr_uno) == -1)
+        err_exit("sigemptyset su mask_sigusr_uno");
+    if(sigdelset(&mask_sigusr_uno, SIGTERM) == -1)
         err_exit("sigemptyset su mask_sigusr_uno");
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
+     if(sigfillset(&mask_sigusr_due) == -1)
+        err_exit("sigemptyset su mask_sigusr_due");
+    if(sigdelset(&mask_sigusr_due, SIGTERM) == -1)
+        err_exit("sigemptyset su mask_sigusr_due");
 
     sa_sigusr_uno.sa_mask = mask_sigusr_uno;
+    sa_sigusr_due.sa_mask = mask_sigusr_due;
     sa_sigterm.sa_mask = mask_sigterm;
 
     if(sigaction(SIGUSR1, &sa_sigusr_uno, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
-    
+    if(sigaction(SIGUSR2, &sa_sigusr_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS2\n");
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 }
@@ -62,7 +78,6 @@ int main(int argc, char **argv){
     sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
     struct my_msgbuf message, msg_energy; //messaggio che manda atomo per inibitore
     msg_energy.mtype = 30;
-
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -80,8 +95,11 @@ int main(int argc, char **argv){
     }
     identificazione(msgid);
     pause(); //aspetta segnale SIGUSR1 di attivatores
-
+    
+    
     if(NUM_ATOMICO > MIN_N_ATOMICO){
+        int error_msgrcv;
+        int energia_prodotta_rel;
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
         char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
@@ -103,9 +121,6 @@ int main(int argc, char **argv){
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
         argv_figlio_2[3] = NULL;
-
-        int error_msgrcv;
-        int energia_prodotta_rel;
         switch(fork()){
             case -1:
                 if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
@@ -138,5 +153,6 @@ int main(int argc, char **argv){
     else{
         scissioni[1].scorie++;
     }
+
     exit(EXIT_SUCCESS);
 }

@@ -91,12 +91,12 @@ int main(int argc, char **argv){
             if(livello_energia < soglia_massima){ //tutto a posto
                 inibitore->num_operazioni_assorb++;
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
-                    scissioni[1].energia_assorbita += 0.5 * atoi(msg_energy.mtext);
+                    scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
                 }
                 kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
             }
             else{
-                inibitore->num_operazioni_fork++; 
+                inibitore->num_operazioni_fork++;
                 kill(inibitore->pid_attivatore, SIGUSR2); //segnale -> attivatore per non far forkare
             }
         }

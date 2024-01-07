@@ -7,7 +7,7 @@ int msgid;
 extern char **environ;
 
 void forka_atomi(){
-    struct msgbuf lettura_identificazione_handl;
+    struct my_msgbuf lettura_identificazione_handl;
     while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
         scissioni[1].attivazioni += 1;
         kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
@@ -64,7 +64,7 @@ int main(int agrc, char **argv){
     msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
-    struct msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
+    struct my_msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
 
     handle_sig();
 

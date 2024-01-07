@@ -13,7 +13,7 @@
 
 #include "libscissione.h"
 
-#define SOGLIA_PERICOLOSA 50 //percentuale
+#define SOGLIA_PERICOLOSA 70 //percentuale
 #define MSG_SIZE_IDENT 128
 #define STEP_ALIMENTAZIONE 900000000
 #define STEP_ATTIVATORE 100000
@@ -32,7 +32,8 @@ union semun{
 }; 
 #endif
 
-struct msgbuf{
+
+struct my_msgbuf{
     long mtype;
     char mtext[MSG_SIZE_IDENT];
 };

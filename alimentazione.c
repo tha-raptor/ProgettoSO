@@ -21,7 +21,7 @@ void handle_sig(){
 
 int main(int argc, char **argv){
     int error_msgrcv;
-    struct msgbuf message;
+    struct my_msgbuf message;
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);

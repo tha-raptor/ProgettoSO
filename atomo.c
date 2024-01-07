@@ -36,7 +36,7 @@ void handle_sig(){
 }
 
 void identificazione(int msgid){
-    struct msgbuf msg_identificazione;
+    struct my_msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
 
@@ -60,7 +60,7 @@ int main(int argc, char **argv){
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
     sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
-    struct msgbuf message, msg_energy; //messaggio che manda atomo per inibitore
+    struct my_msgbuf message, msg_energy; //messaggio che manda atomo per inibitore
     msg_energy.mtype = 30;
 
     int NUM_ATOMICO = atoi(argv[0]);

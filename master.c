@@ -246,7 +246,7 @@ void dealloca_risorse(int semid_isimulaz, int msgid, int shmid, int shmid_inib){
 }
 
 int main(){
-    struct msgbuf message_tutti,
+    struct my_msgbuf message_tutti,
     msg_inib_inib, msg_inib_attiv;
     pid_t master_pid = getpid();
     pid_t group_pid = getpgid(master_pid); //prendo il pid del gruppo

@@ -4,32 +4,22 @@
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
 int msgid;
-int flag_buf;
 extern char **environ;
 
 void forka_atomi(){
     struct my_msgbuf lettura_identificazione_handl;
-    if(flag_buf){ //codice normale - livello non pericoloso
         while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
             scissioni[1].attivazioni += 1;
             kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
         }
-    }
-    else{ //primo giro dopo non aver forkato (bisogna limitare le attivazioni)
-        while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-            scissioni[1].attivazioni += 1;
-            if(atoi(lettura_identificazione_handl.mtext) % 2 == 0)
-                kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
-        }
-    }
 }
 
 void handler_sigurs_uno(){
+
     forka_atomi();
 }
 
 void handler_sigurs_due(){
-    flag_buf = 0;
 }
 
 void handler_flag_inibitore(){
@@ -76,7 +66,6 @@ int main(int agrc, char **argv){
     int shmid = atoi(argv[2]);
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
     struct my_msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
-    flag_buf = 1;
 
     handle_sig();
 

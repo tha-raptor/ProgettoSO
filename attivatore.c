@@ -14,12 +14,32 @@ void forka_atomi(){
         }
 }
 
-void handler_sigurs_uno(){
+void forka_atomi_scoria(){
+    struct my_msgbuf lettura_identificazione_handl;
 
+    char *MSG_SIZE_IDENT_ENV = getenv("MSG_SIZE_IDENT");
+        if (MSG_SIZE_IDENT_ENV == NULL)
+            err_exit("getenv MSG_SIZE_IDENT");
+    int i = 0;
+    while(msgrcv(msgid, &lettura_identificazione_handl, atoi(MSG_SIZE_IDENT_ENV), 1, MSG_NOERROR | IPC_NOWAIT) != -1){
+        if(i % 2 == 0){
+            scissioni[1].attivazioni += 1;
+            kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
+        }
+        else{
+            scissioni[1].scorie++;
+            kill(atoi(lettura_identificazione_handl.mtext), SIGTERM);
+        }
+        i++;
+    }
+}
+
+void handler_sigurs_uno(){
     forka_atomi();
 }
 
 void handler_sigurs_due(){
+    forka_atomi_scoria();
 }
 
 void handler_flag_inibitore(){

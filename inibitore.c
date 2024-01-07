@@ -78,7 +78,14 @@ int main(int argc, char **argv){
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct msgbuf msg_energy;
-    while(1){ 
+
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare
+    
+    while(1){
+        printf(".\n");
         pause();
         if(inibitore->flag_inib){
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);

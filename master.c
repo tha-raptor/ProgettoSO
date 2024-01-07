@@ -127,7 +127,7 @@ void uccidi_processi(){
         err_exit("kill group_pid\n");
 }
 
-void lancia_processi(pid_t parent_pid, int semid, int msgid, int shmid, int N_ATOMI_INIT){
+void crea_processi(pid_t parent_pid, int semid, int msgid, int shmid, int N_ATOMI_INIT){
     char *argv_semid = (char *)malloc(sizeof(char) * 11);
     sprintf(argv_semid, "%d", semid);
     char *argv_msgid = (char*)malloc(sizeof(char) * 11); 
@@ -255,12 +255,12 @@ int main(){
     arg_inizializzazione.val = 0; //inizializzo semaforo inizializzazione a 0
     arg_simulazione.val = 0; //inizializzo semaforo simulazione a 0
 
-    FILE *configFile = fopen("config.txt", "r");
-    if(configFile == NULL)
+    FILE *config_file = fopen("config.txt", "r");
+    if(config_file == NULL)
         err_exit("fopen config.txt");
     
     char line[256];
-    while (fgets(line, sizeof(line), configFile)!=NULL){ //leggo ogni riga del file di configurazione
+    while (fgets(line, sizeof(line), config_file)!=NULL){ //leggo ogni riga del file di configurazione
         if(line[strlen(line)-1] == '\n')    //rimuovo il carattere \n sostituendolo con \0
             line[strlen(line)-1] = '\0';
     
@@ -269,14 +269,13 @@ int main(){
             *separator = '\0';       //in modo che contenga due stringhe
             char *name = line;
             char *value = separator + 1;
-            printf("%s=%s\n",name, value);
             //sovrascrivo le variabili d'ambiente con i valori letti dal file di configurazione
             if(setenv(name, value, 0) == -1){
                 err_exit("error setenv");
             }
         }
     }
-    fclose(configFile);
+    fclose(config_file);
 
     printf("[master %d]\n", getpid());
 
@@ -337,7 +336,7 @@ int main(){
     if(N_ATOMI_INIT_ENV == NULL)
         err_exit("getenv N_ATOMI_INIT");
     int N_ATOMI_INIT = atoi(N_ATOMI_INIT_ENV);
-    lancia_processi(master_pid, semid_isimulaz, msgid, shmid_stats, N_ATOMI_INIT); //lancia tutti i processi
+    crea_processi(master_pid, semid_isimulaz, msgid, shmid_stats, N_ATOMI_INIT); //lancia tutti i processi
 
     //SI NOTIFICA SULLA CODA
     //IL PRIMO CHE RILEVA UNA MANCATA FORK, 

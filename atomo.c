@@ -103,7 +103,6 @@ int main(int argc, char **argv){
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
         argv_figlio_2[3] = NULL;
-        //char *envp[1] = {NULL};
 
         int error_msgrcv;
         int energia_prodotta_rel;

@@ -8,28 +8,28 @@ extern char **environ;
 
 void forka_atomi(){
     struct my_msgbuf lettura_identificazione_handl;
-        while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-            scissioni[1].attivazioni += 1;
-            kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1);
-        }
+    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){ //prendi i messaggi sulla coda
+        scissioni[1].attivazioni += 1; //aggiorna attivazioni
+        kill(atoi(lettura_identificazione_handl.mtext), SIGUSR1); //manda segnale di forkare
+    }
 }
 
 void handler_sigurs_uno(){
-
     forka_atomi();
 }
 
 void handler_sigurs_due(){
+    //svegliati e non fare nulla
 }
 
-void handler_flag_inibitore(){
+void handler_ignora_sigint(){
 }
 
 void handle_sig(){
     struct sigaction sa_sigusr, sa_sigusr_due, sa_sigint;
     sa_sigusr.sa_handler = &handler_sigurs_uno;
     sa_sigusr_due.sa_handler = &handler_sigurs_due;
-    sa_sigint.sa_handler = &handler_flag_inibitore;
+    sa_sigint.sa_handler = &handler_ignora_sigint;
     sa_sigusr.sa_flags = 0;
     sa_sigusr_due.sa_flags = 0;
     sa_sigint.sa_flags = 0;

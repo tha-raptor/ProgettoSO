@@ -18,36 +18,39 @@ void handler_sigterm(){
     exit(EXIT_SUCCESS);
 }
 
+void handler_ignora_sigint(){
+}
+
 void handle_sig(){
-    struct sigaction sa_sigusr_uno, sa_sigterm, sa_sigusr_due;
+    struct sigaction sa_sigusr_uno, sa_sigterm, sa_sigint;
     sa_sigusr_uno.sa_handler = &handler_fork;
     sa_sigusr_uno.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
-    sa_sigusr_due.sa_handler = &handler_fork_scoria;
-    sa_sigusr_due.sa_flags = 0;
+    sa_sigint.sa_handler = &handler_ignora_sigint;
+    sa_sigint.sa_flags = 0;
 
-    sigset_t mask_sigusr_uno, mask_sigterm, mask_sigusr_due;
+    sigset_t mask_sigusr_uno, mask_sigterm, mask_sigusr_due, mask_sigint;
     if(sigfillset(&mask_sigusr_uno) == -1)
         err_exit("sigemptyset su mask_sigusr_uno");
     if(sigdelset(&mask_sigusr_uno, SIGTERM) == -1)
         err_exit("sigemptyset su mask_sigusr_uno");
     if(sigemptyset(&mask_sigterm) == -1)
         err_exit("sigemptyset su mask_sigterm");
-     if(sigfillset(&mask_sigusr_due) == -1)
-        err_exit("sigemptyset su mask_sigusr_due");
-    if(sigdelset(&mask_sigusr_due, SIGTERM) == -1)
-        err_exit("sigemptyset su mask_sigusr_due");
+      if(sigfillset(&mask_sigint) == -1)
+        err_exit("sigemptyset su mask_sigint");
+    if(sigdelset(&mask_sigint, SIGTERM) == -1)
+        err_exit("sigemptyset su mask_sigint");
 
     sa_sigusr_uno.sa_mask = mask_sigusr_uno;
-    sa_sigusr_due.sa_mask = mask_sigusr_due;
     sa_sigterm.sa_mask = mask_sigterm;
+    sa_sigint.sa_mask = mask_sigint;
 
     if(sigaction(SIGUSR1, &sa_sigusr_uno, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
-    if(sigaction(SIGUSR2, &sa_sigusr_due, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
-        err_exit("sigaction su SIGURS2\n");
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+        err_exit("sigaction su SIGURS1\n");
+          if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 }
 
@@ -55,20 +58,11 @@ void identificazione(int msgid){
     struct my_msgbuf msg_identificazione;
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
-
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGINT);
-
-    if (sigprocmask(SIG_BLOCK, &set, NULL) == -1) //blocco ricezione SIGINT per l'identificazione
-        perror("Impossibile bloccare SIGINT\n");
     
     if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1){
          perror("Atomo");
          exit(EXIT_FAILURE);
     }
-    if(sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) //sblocco la ricezione di SIGINT
-        perror("Impossibile risbloccare SIGINT\n");
 }
 
 int main(int argc, char **argv){

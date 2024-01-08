@@ -80,6 +80,7 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     scissioni[1].scorie = 0;
     scissioni[1].scissioni = 0;
     scissioni[1].energia_assorbita = 0;
+    scissioni[1].scorie_inib = 0;
     //stats inibitore
     inibitore->num_operazioni_fork = 0;
     inibitore->num_operazioni_assorb = 0;

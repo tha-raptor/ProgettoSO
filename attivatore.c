@@ -88,6 +88,7 @@ int main(int agrc, char **argv){
 
     for(; ;){
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
+        printf(".\n");
         kill(inibitore->pid_inibitore, SIGUSR1);
         pause();
     }

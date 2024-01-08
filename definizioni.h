@@ -46,6 +46,7 @@ struct stat_scissione{
     int scorie;
     char **log_inibitore;
     float energia_assorbita; 
+    int scorie_inib;
 };
 
 struct stat_inibitore{

@@ -3,20 +3,17 @@
 extern char **environ;
 
 struct stat_scissione *scissioni = NULL;
-int comportamento;
 
 void handler_fork(){
-    comportamento = 1;
 }
 
 void handler_fork_scoria(){
-    comportamento = 0;
 }
 
 void forka(int msgid, int shmid, int NUM_ATOMICO){
     int error_msgrcv;
     int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
-    int num_atomico_figlio_2 =  comportamento ? (NUM_ATOMICO - num_atomico_figlio_1) : 1;
+    int num_atomico_figlio_2 = NUM_ATOMICO - num_atomico_figlio_1;
     char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
     sprintf(num_a1_char, "%d", num_atomico_figlio_1);
     char *num_a2_char = (char*)malloc(sizeof(char) * 3);
@@ -40,33 +37,38 @@ void forka(int msgid, int shmid, int NUM_ATOMICO){
     struct my_msgbuf message, msg_energy;
     msg_energy.mtype = 30; //messaggio che manda atomo per inibitore
     int energia_prodotta_rel;
-    switch(fork()){
-        case -1:
-            if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
-                err_exit("failure msgrcv"); //esci
-            print_protagonista_term("atomo -> atomo", getpid()); //
-            if(kill(atoi(message.mtext), SIGUSR2) == -1) //notifica master
-                err_exit("kill verso master\n");
-            exit(EXIT_SUCCESS);
-        case 0:
-            execve("./atomo", argv_figlio_1, environ);
-            err_exit("Errore execve atomo figlio 1\n");
-            break;
-        default:
-            energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
-            sprintf(msg_energy.mtext, "%d", energia_prodotta_rel); //preparo messaggio
-            //aggiorno mem condivisa
-            scissioni[1].energia_prodotta += energia_prodotta_rel;
-            scissioni[1].scissioni++;
-            /*sigset_t new, old;
-            sigfillset(&new); 
-            sigdelset(&new, SIGTERM);
-            sigprocmask(SIG_BLOCK, &new, &old); //blocchiamo tutti i segnali tranne sigterm (terminazione)*/
-            if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
-                err_exit("prova");
-            //sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
-            execve("./atomo", argv_figlio_2, environ);
-            err_exit("Errore execve atomo figlio 2\n");
+    if(NUM_ATOMICO > MIN_N_ATOMICO){
+        switch(fork()){
+            case -1:
+                if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
+                    err_exit("failure msgrcv"); //esci
+                print_protagonista_term("atomo -> atomo", getpid()); //
+                if(kill(atoi(message.mtext), SIGUSR2) == -1) //notifica master
+                    err_exit("kill verso master\n");
+                exit(EXIT_SUCCESS);
+            case 0:
+                execve("./atomo", argv_figlio_1, environ);
+                err_exit("Errore execve atomo figlio 1\n");
+                break;
+            default:
+                energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
+                sprintf(msg_energy.mtext, "%d", energia_prodotta_rel); //preparo messaggio
+                //aggiorno mem condivisa
+                scissioni[1].energia_prodotta += energia_prodotta_rel;
+                scissioni[1].scissioni++;
+                sigset_t new, old;
+                sigfillset(&new); 
+                sigdelset(&new, SIGTERM);
+                sigprocmask(SIG_BLOCK, &new, &old); //blocchiamo tutti i segnali tranne sigterm (terminazione)*/
+                if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
+                    err_exit("prova");
+                sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
+                execve("./atomo", argv_figlio_2, environ);
+                err_exit("Errore execve atomo figlio 2\n");
+            }
+        }
+        else{
+            scissioni[1].scorie++;
         }
 }
 
@@ -129,7 +131,6 @@ void identificazione(int msgid){
 }
 
 int main(int argc, char **argv){
-    comportamento = 1;
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
@@ -155,11 +156,8 @@ int main(int argc, char **argv){
     identificazione(msgid);
     pause(); //aspetta segnale SIGUSR1 di attivatores
     
-    if(NUM_ATOMICO > MIN_N_ATOMICO){
-        forka(msgid, shmid, NUM_ATOMICO);
-    }else{
-        scissioni[1].scorie++;
-    }
+   
+    forka(msgid, shmid, NUM_ATOMICO);
 
     exit(EXIT_SUCCESS);
 }

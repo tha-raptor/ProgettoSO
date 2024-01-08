@@ -19,11 +19,6 @@ void handler_sigurs_uno(){
 }
 
 void handler_sigurs_due(){
-    struct my_msgbuf lettura_identificazione_handl;
-    while(msgrcv(msgid, &lettura_identificazione_handl, MSG_SIZE_IDENT, 1, MSG_NOERROR | IPC_NOWAIT) != -1){
-        scissioni[1].attivazioni += 1;
-        kill(atoi(lettura_identificazione_handl.mtext), SIGUSR2);
-    }
 }
 
 void handler_flag_inibitore(){
@@ -83,12 +78,16 @@ int main(int agrc, char **argv){
     int shmid_inib = atoi(msg_shared_inib.mtext);
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_attivatore = getpid();
+    //manuale linux
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 0;          // secondi
+    sleep_time.tv_nsec = STEP_ATTIVATORE; // nanosecondi
 
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione attivatore\n");
 
     for(; ;){
-        usleep(STEP_ATTIVATORE);
+        nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         kill(inibitore->pid_inibitore, SIGUSR1);
         pause();
     }

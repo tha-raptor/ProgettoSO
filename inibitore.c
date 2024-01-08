@@ -50,10 +50,10 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
-    struct my_msgbuf msg_shared_inib, msg_fork;
-    msg_fork.mtype = 20;
+    struct my_msgbuf msg_shared_inib;
     struct my_msgbuf lettura_identificazione_handl;
-   
+    int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
+
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
 
     handle_sig();
@@ -63,21 +63,16 @@ int main(int argc, char **argv){
 
     int shmid_inib = atoi(msg_shared_inib.mtext);
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
-    inibitore->pid_inibitore = getpid();
+    inibitore->pid_inibitore = getpid(); //si identifica sulla memoria condivisa
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione inibitore\n");
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione inibitore");
-
-    char *ENERGY_EXPLODE_THRESHOLD_ENV = getenv("ENERGY_EXPLODE_THRESHOLD");
-    if (ENERGY_EXPLODE_THRESHOLD_ENV == NULL)
-        err_exit("getenv ENERGY_EXPLODE_THRESHOLD");
-    int ENERGY_EXPLODE_THRESHOLD = atoi(ENERGY_EXPLODE_THRESHOLD_ENV);
     
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
-    struct my_msgbuf msg_energy;
+    struct my_msgbuf msg_energy; //messaggio che ospiterà l'energia assorbita
 
     sigset_t new, old;
     sigemptyset(&new);
@@ -86,11 +81,11 @@ int main(int argc, char **argv){
     
     while(1){
         pause();
-        if(inibitore->flag_inib){
+        if(inibitore->flag_inib){ //se inib acceso
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);
-            if(livello_energia < soglia_massima){ //tutto a posto
+            if(livello_energia < soglia_massima){ //livello sotto controllo
                 inibitore->num_operazioni_assorb++;
-                while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
+                while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){ //assorbi energia (messaggi con mtype = 30)
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
                 }
                 kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
@@ -100,7 +95,7 @@ int main(int argc, char **argv){
                 kill(inibitore->pid_attivatore, SIGUSR2); //segnale -> attivatore per non far forkare
             }
         }
-        else{
+        else{ //se inib spento
             while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1); //svuota la coda di messaggi perchè non assorbe energia
             kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
         }

@@ -99,12 +99,11 @@ void print_stats(struct stat_scissione *scissioni, int semid_isimulaz){
     printf("\n--------------------\n");
 }
 
-int check_terminazioni(struct stat_scissione *scissioni){
-    char *ENERGY_EXPLODE_THRESHOLD_ENV = getenv("ENERGY_EXPLODE_THRESHOLD");
+int check_terminazioni(struct stat_scissione *scissioni, int ENERGY_EXPLODE_THRESHOLD){
     int energia_disponibile = scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita;
     if(energia_disponibile < 0)
         return -1; //blackout
-    if(energia_disponibile > atoi(ENERGY_EXPLODE_THRESHOLD_ENV))
+    if(energia_disponibile > ENERGY_EXPLODE_THRESHOLD)
         return -2; //explode
     return 0; //si prosegue con la simulazione
 }
@@ -277,6 +276,11 @@ int main(){
     }
     fclose(config_file);
 
+    int SIM_DURATION = atoi(getenv("SIM_DURATION"));
+    int ENERGY_DEMAND = atoi(getenv("ENERGY_DEMAND"));
+    int N_ATOMI_INIT = atoi(getenv("N_ATOMI_INIT"));
+    int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
+
     printf("[master %d]\n", getpid());
 
     printf("\n---- LEGENDA INIB ----\n");
@@ -320,7 +324,7 @@ int main(){
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("shmget inib");
     }
-
+    //inizializzo variabili
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->flag_inib = 0;
     inibitore->num_operazioni_fork = 0;
@@ -332,10 +336,7 @@ int main(){
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("Msgget\n");
     }
-    char *N_ATOMI_INIT_ENV = getenv("N_ATOMI_INIT");
-    if(N_ATOMI_INIT_ENV == NULL)
-        err_exit("getenv N_ATOMI_INIT");
-    int N_ATOMI_INIT = atoi(N_ATOMI_INIT_ENV);
+    
     crea_processi(master_pid, semid_isimulaz, msgid, shmid_stats, N_ATOMI_INIT); //lancia tutti i processi
 
     //SI NOTIFICA SULLA CODA
@@ -382,24 +383,17 @@ int main(){
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione master\n");
 
-    char *SIM_DURATION_ENV = getenv("SIM_DURATION");
-    if(SIM_DURATION_ENV == NULL)
-        err_exit("getenv SIM_DURATION");
-    char *ENERGY_DEMAND = getenv("ENERGY_DEMAND");
-    if(ENERGY_DEMAND == NULL)
-        err_exit("getenv ENERGY_DEMAND");
-
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
 
     //INIZIO SIMULAZIONE
-    for(int i = 0; i < atoi(SIM_DURATION_ENV) && flag; i++){
+    for(int i = 0; i < SIM_DURATION && flag; i++){
         sigprocmask(SIG_BLOCK, &new, &old);  //blocco SIGINT solo quando deve stampare
         sleep(1);
-        term = check_terminazioni(scissioni);
+        term = check_terminazioni(scissioni, ENERGY_EXPLODE_THRESHOLD);
         if(term == 0 && flag != 0){ //la simulazione prosegue
-            scissioni[1].energia_consumata = atoi(ENERGY_DEMAND); //preleva energia
+            scissioni[1].energia_consumata = ENERGY_DEMAND; //preleva energia
             print_stats(scissioni, semid_isimulaz); //stampa statistiche
             sigprocmask(SIG_SETMASK, &old, NULL); //sblocco SIGINT
         }

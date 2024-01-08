@@ -3,18 +3,19 @@
 int reserveSem(int semid, int semNum, int semOperation, int numSemafori){
     struct sembuf sops[numSemafori];
 
-   for(int i = 0; i < numSemafori; i++){
-        sops[i].sem_num = i;
-        sops[i].sem_op = (i == semNum) ? (semOperation*-1) : 0;
-        sops[i].sem_flg = 0;
-   }
-    
+    //slide
+    for(int i = 0; i < numSemafori; i++){
+            sops[i].sem_num = i;
+            sops[i].sem_op = (i == semNum) ? (semOperation*-1) : 0;
+            sops[i].sem_flg = 0;
+    }
     return semop(semid, sops, numSemafori);
 }
 
 int releaseSem(int semid, int semNum, int semOperation, int numSemafori){
     struct sembuf sops[numSemafori];
 
+    //slide
     for(int i = 0; i < numSemafori; i++){
         sops[i].sem_num = i;
         sops[i].sem_op = (i == semNum) ? semOperation : 0;
@@ -34,5 +35,5 @@ int energy(int n1, int n2){
 }
 
 void print_protagonista_term(char *s, int pid){
-    printf("Protagonista meltdown [%s] %d\n", s, pid);
+    printf("Protagonista meltdown [%s %d]\n", s, pid);
 }

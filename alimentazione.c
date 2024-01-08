@@ -2,20 +2,21 @@
 
 extern char **environ;
 
-void handler_FlagInibitore(){ 
+void handler_ignora_sigint(){ 
 }
 
 void handle_sig(){
-    struct sigaction sa_SIGINT;
-    sa_SIGINT.sa_handler = &handler_FlagInibitore;
-    sa_SIGINT.sa_flags = 0;
-    sigset_t mask_SIGINT;
-    if(sigfillset(&mask_SIGINT) == -1) //Segnale in input
-        err_exit("sigemptyset su mask_SIGINT");
-    if(sigdelset(&mask_SIGINT, SIGTERM) == -1) //Segnale in input
-        err_exit("sigemptyset su mask_SIGINT");
-    sa_SIGINT.sa_mask = mask_SIGINT;
-    if(sigaction(SIGINT, &sa_SIGINT, NULL) == -1)
+    struct sigaction sa_sigint;
+    sa_sigint.sa_handler = &handler_ignora_sigint;
+    sa_sigint.sa_flags = 0;
+
+    sigset_t mask_sigint;
+    if(sigfillset(&mask_sigint) == -1)
+        err_exit("sigemptyset su mask_sigint");
+    if(sigdelset(&mask_sigint, SIGTERM) == -1)
+        err_exit("sigemptyset su mask_sigint");
+    sa_sigint.sa_mask = mask_sigint;
+    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)
         err_exit("sigaction per SIGINT");     
 }
 
@@ -25,8 +26,8 @@ int main(int argc, char **argv){
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
+    int N_NUOVI_ATOMI = atoi(getenv("N_NUOVI_ATOMI"));
 
-    //char *envp[] = {NULL};
     char **argvAtomo = (char **)malloc(sizeof(char*) * 4); 
     char *argv_msgid = (char*)malloc(sizeof(char) * 11);
     sprintf(argv_msgid, "%d", msgid);
@@ -38,21 +39,21 @@ int main(int argc, char **argv){
     int counter_creazione = 0;  
 
     handle_sig();
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
 
     //manuale linux
     struct timespec sleep_time;
-    sleep_time.tv_sec = 0;          // secondi
+    sleep_time.tv_sec = 0;                   // secondi
     sleep_time.tv_nsec = STEP_ALIMENTAZIONE; // nanosecondi
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione alimentazione\n");
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione alimentazione\n");
-
-    char *N_NUOVI_ATOMI_ENV = getenv("N_NUOVI_ATOMI");
-    if (N_NUOVI_ATOMI_ENV == NULL)
-        err_exit("getenv N_NUOVI_ATOMI");
-    int N_NUOVI_ATOMI = atoi(N_NUOVI_ATOMI_ENV);
+    
     for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params
         while(counter_creazione < N_NUOVI_ATOMI){ //fino a quando non raggiungo N_NUOVI_ATOMI

@@ -3,7 +3,7 @@
 //utili per handler fork (SIGUSR_UNO)
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
-int msgid;
+int msgid; //serve nell'handler
 extern char **environ;
 
 void forka_atomi(){
@@ -65,12 +65,13 @@ int main(int agrc, char **argv){
     msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
-    struct my_msgbuf lettura_identificazione, notifica_master, msg_shared_inib, msg_fork;
+    struct my_msgbuf msg_shared_inib;
 
     handle_sig();
-
-    if(releaseSem(semid, 0, 1, 2) == -1)
-        err_exit("releaseSem inizializzazione attivatore\n");
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
 
     if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 11, MSG_NOERROR) == -1)
         err_exit("Msgrcv master -> attivatore");
@@ -80,13 +81,15 @@ int main(int agrc, char **argv){
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_attivatore = getpid();
 
+    if(releaseSem(semid, 0, 1, 2) == -1)
+        err_exit("releaseSem inizializzazione attivatore\n");
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione attivatore\n");
 
     for(; ;){
         usleep(STEP_ATTIVATORE);
-        kill(inibitore->pid_inibitore, SIGUSR1);
-        pause();
+        kill(inibitore->pid_inibitore, SIGUSR1); //inizio handshake con inbiitore
+        pause(); //aspetta che inibitore monitori il livello di energia
     }
     
     //non arriverà mai qui

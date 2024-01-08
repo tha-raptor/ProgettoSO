@@ -13,10 +13,10 @@
 
 #include "libscissione.h"
 
-#define SOGLIA_PERICOLOSA 70 //percentuale
+#define SOGLIA_PERICOLOSA 50 //percentuale (inib)
 #define MSG_SIZE_IDENT 128
 #define STEP_ALIMENTAZIONE 900000000
-#define STEP_ATTIVATORE 100000
+#define STEP_ATTIVATORE 900000
 #define MIN_N_ATOMICO 10
 #define N_ATOM_MAX 30
 
@@ -32,7 +32,6 @@ union semun{
 }; 
 #endif
 
-
 struct my_msgbuf{
     long mtype;
     char mtext[MSG_SIZE_IDENT];
@@ -44,8 +43,8 @@ struct stat_scissione{
     int energia_prodotta;
     int energia_consumata;
     int scorie;
-    char **log_inibitore;
-    float energia_assorbita; 
+    char **log_inibitore; //usata solo [0] assolute
+    float energia_assorbita;
 };
 
 struct stat_inibitore{

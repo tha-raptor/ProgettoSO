@@ -1,16 +1,11 @@
 #include "definizioni.h"
 
 extern char **environ;
-
 struct stat_scissione *scissioni = NULL;
 int flag_comportamento_atomo;
 
 void handler_fork(){
-    //flag_comportamento_atomo = 1;
-}
-
-void handler_fork_scoria(){
-    flag_comportamento_atomo = 0;
+    //sveglia! e forka
 }
 
 void handler_sigterm(){
@@ -59,18 +54,12 @@ void identificazione(int msgid){
     sprintf(msg_identificazione.mtext, "%d", getpid());
     msg_identificazione.mtype = 1; //tutti gli atomi mtype = 1, mtext = getpid()
     
-    if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1){
-         perror("Atomo");
+    if(msgsnd(msgid, &msg_identificazione, sizeof(msg_identificazione), 0) == -1)
          exit(EXIT_FAILURE);
-    }
 }
 
 int main(int argc, char **argv){
-    sigset_t new, old;
-    sigemptyset(&new);
-    sigaddset(&new, SIGINT);
-    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
-    struct my_msgbuf message, msg_energy; //messaggio che manda atomo per inibitore
+    struct my_msgbuf msg_meltdown, msg_energy; //messaggio che manda atomo per inibitore
     msg_energy.mtype = 30;
     int NUM_ATOMICO = atoi(argv[0]);
     int msgid = atoi(argv[1]);
@@ -79,30 +68,37 @@ int main(int argc, char **argv){
     scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0); //scissioni[0] = assoluto, scissioni[1] = relativo
 
     handle_sig();
+    sigset_t new, old;
+    sigemptyset(&new);
+    sigaddset(&new, SIGINT);
+    sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare che SIGINT faccia terminare
 
-    if(argv[3] != NULL){
+    if(argv[3] != NULL){ //entra solo se ATOMO_INIT
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione atomo\n");
         if(reserveSem(semid, 1, 1, 2) == -1)
             err_exit("reserveSem simulazione atomo\n");
     }
-    identificazione(msgid);
+    identificazione(msgid); //si identifica sulla coda tramite mtype = 1
     pause(); //aspetta segnale SIGUSR1 di attivatores
     
     
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int error_msgrcv;
-        int energia_prodotta_rel;
+        int energia_scissione; //energia liberata nella scissione
+
+        //FORMULA = NUM_ATOMICO * 0.5
         int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
         int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
-        char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
+
+        char *num_a1_char = (char*)malloc(sizeof(char) * 3);
         sprintf(num_a1_char, "%d", num_atomico_figlio_1);
         char *num_a2_char = (char*)malloc(sizeof(char) * 3);
         sprintf(num_a2_char, "%d", num_atomico_figlio_2);
-        char *msgid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
+        char *msgid_char = (char*)malloc(sizeof(char) * 11);
         sprintf(msgid_char, "%d", msgid);
-        char *shmid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
+        char *shmid_char = (char*)malloc(sizeof(char) * 11);
         sprintf(shmid_char, "%d", shmid);
 
         char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 4);
@@ -115,28 +111,26 @@ int main(int argc, char **argv){
         argv_figlio_2[1] = msgid_char;
         argv_figlio_2[2] = shmid_char;
         argv_figlio_2[3] = NULL;
+
         switch(fork()){
             case -1:
-                if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
-                    err_exit("failure msgrcv"); //esci
-                print_protagonista_term("atomo -> atomo", getpid()); //
-                if(kill(atoi(message.mtext), SIGUSR2) == -1) //notifica master
-                    err_exit("kill verso master\n");
+                while(msgrcv(msgid, &msg_meltdown, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1); //messaggio da master con suo PID
+                print_protagonista_term("atomo -> atomo", getpid()); //stampo chi ha causato meltdown e facendo cosa
+                while(kill(atoi(msg_meltdown.mtext), SIGUSR2) == -1); //notifico avvenuto meltdown master tramite sigterm
                 exit(EXIT_SUCCESS);
             case 0:
                 execve("./atomo", argv_figlio_1, environ);
                 err_exit("Errore execve atomo figlio 1\n");
-                break;
             default:
-                energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
-                sprintf(msg_energy.mtext, "%d", energia_prodotta_rel); //preparo messaggio
-                //aggiorno mem condivisa
-                scissioni[1].energia_prodotta += energia_prodotta_rel;
+                energia_scissione = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
+                sprintf(msg_energy.mtext, "%d", energia_scissione); //preparo messaggio
+                //aggiorno mem condivisa statistiche
+                scissioni[1].energia_prodotta += energia_scissione;
                 scissioni[1].scissioni++;
                 sigset_t new, old;
                 sigfillset(&new); 
                 sigdelset(&new, SIGTERM);
-                sigprocmask(SIG_BLOCK, &new, &old); //blocchiamo tutti i segnali tranne sigterm (terminazione)
+                sigprocmask(SIG_BLOCK, &new, &old); //blocco tutti i segnali tranne sigterm (terminazione)
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
                 sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali

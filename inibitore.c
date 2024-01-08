@@ -90,6 +90,7 @@ int main(int argc, char **argv){
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);
             if(livello_energia < soglia_massima){ //tutto a posto
                 inibitore->num_operazioni_assorb++;
+                printf("aaorb\n");
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
                 }

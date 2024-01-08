@@ -13,7 +13,30 @@ void handler_fork_scoria(){
     comportamento = 0;
 }
 
-void forka(int msgid, char ***argv_figlio_1, char ***argv_figlio_2, int num_atomico_figlio_1, int num_atomico_figlio_2){
+void forka(int msgid, int shmid, int NUM_ATOMICO){
+    int error_msgrcv;
+    int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
+    int num_atomico_figlio_2 =  comportamento ? (NUM_ATOMICO - num_atomico_figlio_1) : 1;
+    char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
+    sprintf(num_a1_char, "%d", num_atomico_figlio_1);
+    char *num_a2_char = (char*)malloc(sizeof(char) * 3);
+    sprintf(num_a2_char, "%d", num_atomico_figlio_2);
+    char *msgid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
+    sprintf(msgid_char, "%d", msgid);
+    char *shmid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
+    sprintf(shmid_char, "%d", shmid);
+
+    char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 4);
+    char **argv_figlio_2 = (char**)malloc(sizeof(char*) * 4);
+    argv_figlio_1[0] = num_a1_char;
+    argv_figlio_1[1] = msgid_char;
+    argv_figlio_1[2] = shmid_char;
+    argv_figlio_1[3] = NULL;
+    argv_figlio_2[0] = num_a2_char;
+    argv_figlio_2[1] = msgid_char;
+    argv_figlio_2[2] = shmid_char;
+    argv_figlio_2[3] = NULL;
+    
     struct my_msgbuf message, msg_energy;
     msg_energy.mtype = 30; //messaggio che manda atomo per inibitore
     int energia_prodotta_rel;
@@ -26,7 +49,7 @@ void forka(int msgid, char ***argv_figlio_1, char ***argv_figlio_2, int num_atom
                 err_exit("kill verso master\n");
             exit(EXIT_SUCCESS);
         case 0:
-            execve("./atomo", *argv_figlio_1, environ);
+            execve("./atomo", argv_figlio_1, environ);
             err_exit("Errore execve atomo figlio 1\n");
             break;
         default:
@@ -42,41 +65,7 @@ void forka(int msgid, char ***argv_figlio_1, char ***argv_figlio_2, int num_atom
             if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                 err_exit("prova");
             //sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
-            execve("./atomo", *argv_figlio_2, environ);
-            err_exit("Errore execve atomo figlio 2\n");
-        }
-}
-
-void forka_con_scoria(int msgid, char ***argv_figlio_1, int num_atomico_figlio_1, int num_atomico_figlio_2){
-    struct my_msgbuf message, msg_energy;
-    msg_energy.mtype = 30; //messaggio che manda atomo per inibitore
-    int energia_prodotta_rel;
-    switch(fork()){
-        case -1:
-            if(msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1) //messaggio da master con suo PID
-                err_exit("failure msgrcv"); //esci
-            print_protagonista_term("atomo -> atomo", getpid()); //
-            if(kill(atoi(message.mtext), SIGUSR2) == -1) //notifica master
-                err_exit("kill verso master\n");
-            exit(EXIT_SUCCESS);
-        case 0:
-            scissioni[1].scorie_inib++;
-            exit(EXIT_SUCCESS);
-            break;
-        default:
-            energia_prodotta_rel = energy(num_atomico_figlio_1, num_atomico_figlio_2); //calcola energia prodotta
-            sprintf(msg_energy.mtext, "%d", energia_prodotta_rel); //preparo messaggio
-            //aggiorno mem condivisa
-            scissioni[1].energia_prodotta += energia_prodotta_rel;
-            scissioni[1].scissioni++;
-            /*sigset_t new, old;
-            sigfillset(&new); 
-            sigdelset(&new, SIGTERM);
-            sigprocmask(SIG_BLOCK, &new, &old); //blocchiamo tutti i segnali tranne sigterm (terminazione)*/
-            if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
-                err_exit("prova");
-            //sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
-            execve("./atomo", *argv_figlio_1, environ);
+            execve("./atomo", argv_figlio_2, environ);
             err_exit("Errore execve atomo figlio 2\n");
         }
 }
@@ -162,40 +151,14 @@ int main(int argc, char **argv){
         if(reserveSem(semid, 1, 1, 2) == -1)
             err_exit("reserveSem simulazione atomo\n");
     }
-    int error_msgrcv;
-    int energia_prodotta_rel;
-    int num_atomico_figlio_1 = NUM_ATOMICO * 0.5;
-    int num_atomico_figlio_2 =  NUM_ATOMICO - num_atomico_figlio_1;
-    char *num_a1_char = (char*)malloc(sizeof(char) * 3); //non so bene perchè 20, mi gustava
-    sprintf(num_a1_char, "%d", num_atomico_figlio_1);
-    char *num_a2_char = (char*)malloc(sizeof(char) * 3);
-    sprintf(num_a2_char, "%d", num_atomico_figlio_2);
-    char *msgid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
-    sprintf(msgid_char, "%d", msgid);
-    char *shmid_char = (char*)malloc(sizeof(char) * 11); //non so bene perchè 20, mi gustava
-    sprintf(shmid_char, "%d", shmid);
 
-    char **argv_figlio_1 = (char**)malloc(sizeof(char*) * 4);
-    char **argv_figlio_2 = (char**)malloc(sizeof(char*) * 4);
-    argv_figlio_1[0] = num_a1_char;
-    argv_figlio_1[1] = msgid_char;
-    argv_figlio_1[2] = shmid_char;
-    argv_figlio_1[3] = NULL;
-    argv_figlio_2[0] = num_a2_char;
-    argv_figlio_2[1] = msgid_char;
-    argv_figlio_2[2] = shmid_char;
-    argv_figlio_2[3] = NULL;
     identificazione(msgid);
     pause(); //aspetta segnale SIGUSR1 di attivatores
     
-    if(comportamento){
-        if(NUM_ATOMICO > MIN_N_ATOMICO){
-            forka(msgid, &argv_figlio_1, &argv_figlio_2, num_atomico_figlio_1, num_atomico_figlio_2);
-        }else{
-            scissioni[1].scorie++;
-        }
+    if(NUM_ATOMICO > MIN_N_ATOMICO){
+        forka(msgid, shmid, NUM_ATOMICO);
     }else{
-         forka_con_scoria(msgid, &argv_figlio_1, num_atomico_figlio_1, num_atomico_figlio_2);
+        scissioni[1].scorie++;
     }
 
     exit(EXIT_SUCCESS);

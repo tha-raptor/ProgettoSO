@@ -69,25 +69,31 @@ int main(int argc, char **argv){
         err_exit("reserveSem simulazione inibitore");
     //inizio simulazione
     
+
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);
     struct my_msgbuf msg_energy; //messaggio che ospiterà l'energia assorbita
 
-    sigset_t new, old;
+    sigset_t new, old, new_block_energy, old_block_energy;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);
     sigprocmask(SIG_BLOCK, &new, &old); //blocco SIGINT per evitare
-    
+
+    sigfillset(&new_block_energy);
+    sigdelset(&new_block_energy, SIGTERM);
     while(1){
         pause();
         if(inibitore->flag_inib){ //se inib acceso
             livello_energia = ((float)(scissioni[0].energia_prodotta - scissioni[0].energia_consumata - scissioni[0].energia_assorbita) / ENERGY_EXPLODE_THRESHOLD);
             if(livello_energia < soglia_massima){ //livello sotto controllo
-                inibitore->num_operazioni_assorb++;
+                kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
+                
+                sigprocmask(SIG_BLOCK, &new_block_energy, &old_block_energy);
                 while(msgrcv(msgid, &msg_energy, MSG_SIZE_IDENT, 30, MSG_NOERROR | IPC_NOWAIT) != -1){ //assorbi energia (messaggi con mtype = 30)
                     scissioni[1].energia_assorbita += 0.2 * atoi(msg_energy.mtext);
+                    inibitore->num_operazioni_assorb++;
                 }
-                kill(inibitore->pid_attivatore, SIGUSR1); //segnale -> attivatore per far forkare
+                sigprocmask(SIG_SETMASK, &old_block_energy, NULL);
             }
             else{
                 inibitore->num_operazioni_fork++;

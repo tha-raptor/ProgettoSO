@@ -276,10 +276,10 @@ int main(){
     }
     fclose(config_file);
 
-    int SIM_DURATION = atoi(getenv("SIM_DURATION"));
-    int ENERGY_DEMAND = atoi(getenv("ENERGY_DEMAND"));
-    int N_ATOMI_INIT = atoi(getenv("N_ATOMI_INIT"));
-    int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
+    const int SIM_DURATION = atoi(getenv("SIM_DURATION"));
+    const int ENERGY_DEMAND = atoi(getenv("ENERGY_DEMAND"));
+    const int N_ATOMI_INIT = atoi(getenv("N_ATOMI_INIT"));
+    const int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
 
     printf("[master %d]\n", getpid());
 
@@ -300,7 +300,6 @@ int main(){
         
     //SHM
     if((shmid_stats = shmget(IPC_PRIVATE, sizeof(struct stat_scissione) * 2, IPC_CREAT | 0666)) == -1){
-        uccidi_processi();
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("shmget stats");
     }
@@ -320,7 +319,6 @@ int main(){
     scissioni[1].energia_assorbita = 0;
     scissioni[1].log_inibitore = NULL;
     if((shmid_inib = shmget(IPC_PRIVATE, sizeof(struct stat_inibitore), IPC_CREAT | 0666)) == -1){
-        uccidi_processi();
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("shmget inib");
     }
@@ -366,7 +364,7 @@ int main(){
         dealloca_risorse(semid_isimulaz, msgid, shmid_stats, shmid_inib);
         err_exit("Msg snd master -> attivatore\n");
     }
-    
+
     //SEMAFORO FINE INIT 
     int semaph_operation = N_ATOMI_INIT + 3;
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)

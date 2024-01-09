@@ -48,8 +48,8 @@ int main(int argc, char **argv){
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
     struct my_msgbuf msg_shared_inib;
-    struct my_msgbuf lettura_identificazione_handl;
-    int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
+    //struct my_msgbuf lettura_identificazione_handl;
+    const int ENERGY_EXPLODE_THRESHOLD = atoi(getenv("ENERGY_EXPLODE_THRESHOLD"));
 
     struct stat_scissione *scissioni = (struct stat_scissione *)shmat(shmid, NULL, 0);
 
@@ -90,7 +90,7 @@ int main(int argc, char **argv){
                 }
                 if(kill(inibitore->pid_attivatore, SIGUSR1) == -1){ //segnale -> attivatore per far forkare
                     printf("\nErrore HANDSHAKE\n");
-                } 
+                }
             }
             else{
                 inibitore->num_operazioni_fork++;

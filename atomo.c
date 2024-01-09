@@ -132,9 +132,6 @@ int main(int argc, char **argv){
                 sigprocmask(SIG_BLOCK, &new, &old); //blocco tutti i segnali tranne sigterm (terminazione)*/
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
-                else{
-                    //printf("mandato\n");
-                }
                 sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
                 execve("./atomo", argv_figlio_2, environ);
                 err_exit("Errore execve atomo figlio 2\n");

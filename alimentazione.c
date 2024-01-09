@@ -19,7 +19,7 @@ void handle_sig(){
 
 int main(int argc, char **argv){
     int error_msgrcv;
-    struct my_msgbuf message;
+    struct my_msgbuf msg_meltdown;
     int semid = atoi(argv[0]);
     int msgid = atoi(argv[1]);
     int shmid = atoi(argv[2]);
@@ -61,22 +61,17 @@ int main(int argc, char **argv){
                 child_pid = fork();  
             switch(child_pid){
                 case -1:
-                    error_msgrcv = msgrcv(msgid, &message, MSG_SIZE_IDENT, 2, MSG_NOERROR);
-                    if(error_msgrcv == -1){ //se ha dato errore la msgrcv
-                        if(errno != ENOMSG) //se l'errore è diverso da "non ci sono più messaggi"
-                            err_exit("failure msgrcv");
-                    }
-                    print_protagonista_term("alimentazione -> atomo", getpid());
-                    if(kill(atoi(message.mtext), SIGUSR2 ) == -1)
-                        err_exit("kill verso master\n");
+                    while(msgrcv(msgid, &msg_meltdown, MSG_SIZE_IDENT, 2, MSG_NOERROR) == -1); //messaggio da master con suo PID
+                    print_protagonista_term("atomo -> atomo", getpid()); //stampo chi ha causato meltdown e facendo cosa
+                    while(kill(atoi(msg_meltdown.mtext), SIGUSR2) == -1); //notifico avvenuto meltdown master tramite sigterm
                     exit(EXIT_SUCCESS);
-                case 0:  
+                    case 0:
                     sprintf(NUM_ATOMICO, "%d", (rand() % N_ATOM_MAX)+1); //random tra 1 e N_ATOM_MAX
                     argvAtomo[0] = NUM_ATOMICO;
                     argvAtomo[1] = argv_msgid;
                     argvAtomo[2] = argv_shmid;
                     argvAtomo[3]= NULL;
-                    execve("./atomo", argvAtomo, environ); //argv[0] = NUM_ATOMICO, argv[1] = msgid, envp = environ
+                    execve("./atomo", argvAtomo, environ);
                     err_exit("Exceve atomo");
                 default:
                      counter_creazione++;

@@ -77,7 +77,11 @@ int main(int agrc, char **argv){
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_attivatore = getpid();
 
-    
+    //manuale linux
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 0;                   // secondi
+    sleep_time.tv_nsec = STEP_ATTIVATORE; // nanosecondi
+
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione attivatore\n");
     //fine inizializzazione
@@ -86,7 +90,7 @@ int main(int agrc, char **argv){
     //inizio simulazione
 
     for(; ;){
-        usleep(STEP_ATTIVATORE);
+        nanosleep(&sleep_time, NULL);
         kill(inibitore->pid_inibitore, SIGUSR1); //inizio handshake con inbiitore
         pause(); //aspetta che inibitore monitori il livello di energia
     }

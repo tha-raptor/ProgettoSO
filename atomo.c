@@ -82,7 +82,6 @@ int main(int argc, char **argv){
     identificazione(msgid); //si identifica sulla coda tramite mtype = 1
     pause(); //aspetta segnale SIGUSR1 di attivatores
     
-    
     if(NUM_ATOMICO > MIN_N_ATOMICO){
         int error_msgrcv;
         int energia_scissione; //energia liberata nella scissione
@@ -126,13 +125,16 @@ int main(int argc, char **argv){
                 //aggiorno mem condivisa statistiche
                 scissioni[1].energia_prodotta += energia_scissione;
                 scissioni[1].scissioni++;
-                //blocco tutti i segnali tranne SIGTERM per mandare messaggio sulla codaß
+                //blocco tutti i segnali tranne SIGTERM per mandare messaggio sulla coda
                 sigset_t new, old;
                 sigfillset(&new); 
                 sigdelset(&new, SIGTERM);
-                sigprocmask(SIG_BLOCK, &new, &old); //blocco tutti i segnali tranne sigterm (terminazione)
+                sigprocmask(SIG_BLOCK, &new, &old); //blocco tutti i segnali tranne sigterm (terminazione)*/
                 if(msgsnd(msgid, &msg_energy, sizeof(msg_energy), 0) == -1)
                     err_exit("prova");
+                else{
+                    //printf("mandato\n");
+                }
                 sigprocmask(SIG_SETMASK, &old, NULL); //sblocco segnali
                 execve("./atomo", argv_figlio_2, environ);
                 err_exit("Errore execve atomo figlio 2\n");

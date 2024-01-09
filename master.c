@@ -371,6 +371,7 @@ int main(){
     int semaph_operation = N_ATOMI_INIT + 3;
     if(reserveSem(semid_isimulaz, 0, semaph_operation, 2) == -1)
         err_exit("reserveSem inizializzazione master\n");
+    //fine inizializzazione processi
 
     char si_no;
     printf("\nInibitore (y/n):");
@@ -382,7 +383,8 @@ int main(){
     //SEMAFORO INIZIO SIMULAZ (RILASCIA TUTTI I PROCESSI)
     if(releaseSem(semid_isimulaz, 1, semaph_operation, 2) == -1)
         err_exit("releaseSem simulazione master\n");
-
+    //da qui inizia la simulazione
+    
     sigset_t new, old;
     sigemptyset(&new);
     sigaddset(&new, SIGINT);

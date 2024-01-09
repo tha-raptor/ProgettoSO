@@ -1,9 +1,9 @@
 #include "definizioni.h"
 
-//utili per handler fork (SIGUSR_UNO)
+//utili per handler (SIGUSR1)
 struct stat_scissione *scissioni = NULL;
 struct stat_inibitore *inibitore = NULL;
-int msgid; //serve nell'handler
+int msgid;
 extern char **environ;
 
 void forka_atomi(){
@@ -22,14 +22,11 @@ void handler_sigurs_due(){
     //svegliati e non fare nulla
 }
 
-void handler_ignora_sigint(){
-}
-
 void handle_sig(){
     struct sigaction sa_sigusr, sa_sigusr_due, sa_sigint;
     sa_sigusr.sa_handler = &handler_sigurs_uno;
     sa_sigusr_due.sa_handler = &handler_sigurs_due;
-    sa_sigint.sa_handler = &handler_ignora_sigint;
+    sa_sigint.sa_handler = (void *)&handler_ignora_sigint;
     sa_sigusr.sa_flags = 0;
     sa_sigusr_due.sa_flags = 0;
     sa_sigint.sa_flags = 0;
@@ -76,15 +73,17 @@ int main(int agrc, char **argv){
     if(msgrcv(msgid, &msg_shared_inib, MSG_SIZE_IDENT, 11, MSG_NOERROR) == -1)
         err_exit("Msgrcv master -> attivatore");
 
-    //CONTROLLARE SE POSTO GIUSTO
     int shmid_inib = atoi(msg_shared_inib.mtext);
     inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_attivatore = getpid();
 
+    
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione attivatore\n");
+    //fine inizializzazione
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione attivatore\n");
+    //inizio simulazione
 
     for(; ;){
         usleep(STEP_ATTIVATORE);

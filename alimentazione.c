@@ -2,12 +2,9 @@
 
 extern char **environ;
 
-void handler_ignora_sigint(){ 
-}
-
 void handle_sig(){
     struct sigaction sa_sigint;
-    sa_sigint.sa_handler = &handler_ignora_sigint;
+    sa_sigint.sa_handler = (void *)&handler_ignora_sigint;
     sa_sigint.sa_flags = 0;
 
     sigset_t mask_sigint;
@@ -51,8 +48,10 @@ int main(int argc, char **argv){
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione alimentazione\n");
+    //fine inizializzazione
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione alimentazione\n");
+    //inizio simulazione
     
     for (; ;) {
         nanosleep(&sleep_time, NULL);  //ogni STEP_NANO, check params

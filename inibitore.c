@@ -1,11 +1,8 @@
 #include "definizioni.h"
 
-struct stat_inibitore *inibitore = NULL;
 extern char **environ;
-void handler_sigurs_uno(){
-}
 
-void handler_flag_inibitore(){
+void handler_sigurs_uno(){
 }
 
 void handler_sigterm(){ 
@@ -16,7 +13,7 @@ void handle_sig(){
     struct sigaction sa_sigusr, sa_sigint, sa_sigterm;
     sa_sigusr.sa_handler = &handler_sigurs_uno;
     sa_sigusr.sa_flags = 0;
-    sa_sigint.sa_handler = &handler_flag_inibitore;
+    sa_sigint.sa_handler = (void *)&handler_ignora_sigint;
     sa_sigint.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;  
@@ -38,7 +35,7 @@ void handle_sig(){
     sa_sigusr.sa_mask = mask_sigurs_uno;
     sa_sigterm.sa_mask = mask_sigterm;
 
-     if(sigaction(SIGUSR1, &sa_sigusr, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGUSR1, &sa_sigusr, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)
         err_exit("sigaction per SIGTERM");
@@ -62,13 +59,15 @@ int main(int argc, char **argv){
         err_exit("Msgrcv master -> inibitore");
 
     int shmid_inib = atoi(msg_shared_inib.mtext);
-    inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
+    struct stat_inibitore *inibitore = (struct stat_inibitore *)shmat(shmid_inib, NULL, 0);
     inibitore->pid_inibitore = getpid(); //si identifica sulla memoria condivisa
 
     if(releaseSem(semid, 0, 1, 2) == -1)
         err_exit("releaseSem inizializzazione inibitore\n");
+    //fine inizializzazione
     if(reserveSem(semid, 1, 1, 2) == -1)
         err_exit("reserveSem simulazione inibitore");
+    //inizio simulazione
     
     float livello_energia;
     float soglia_massima = ((float) SOGLIA_PERICOLOSA / 100);

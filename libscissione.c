@@ -37,3 +37,6 @@ int energy(int n1, int n2){
 void print_protagonista_term(char *s, int pid){
     printf("Protagonista meltdown [%s %d]\n", s, pid);
 }
+
+void handler_ignora_sigint(){
+}

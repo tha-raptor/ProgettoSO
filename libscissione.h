@@ -3,3 +3,4 @@ extern int reserveSem(int, int, int, int);
 void err_exit(char *);
 int energy(int, int);
 void print_protagonista_term(char *, int);
+void handler_ignora_sigint(void);

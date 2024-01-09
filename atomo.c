@@ -13,16 +13,13 @@ void handler_sigterm(){
     exit(EXIT_SUCCESS);
 }
 
-void handler_ignora_sigint(){
-}
-
 void handle_sig(){
     struct sigaction sa_sigusr_uno, sa_sigterm, sa_sigint;
     sa_sigusr_uno.sa_handler = &handler_fork;
     sa_sigusr_uno.sa_flags = 0;
     sa_sigterm.sa_handler = &handler_sigterm;
     sa_sigterm.sa_flags = 0;
-    sa_sigint.sa_handler = &handler_ignora_sigint;
+    sa_sigint.sa_handler = (void *)&handler_ignora_sigint;
     sa_sigint.sa_flags = 0;
 
     sigset_t mask_sigusr_uno, mask_sigterm, mask_sigusr_due, mask_sigint;
@@ -45,7 +42,7 @@ void handle_sig(){
         err_exit("sigaction su SIGURS1\n");
     if(sigaction(SIGTERM, &sa_sigterm, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
-          if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
+    if(sigaction(SIGINT, &sa_sigint, NULL) == -1)  //imposto un handler da svolgere all'arrivo di SIGINT da parte di attivatore
         err_exit("sigaction su SIGURS1\n");
 }
 
@@ -77,8 +74,10 @@ int main(int argc, char **argv){
         int semid = atoi(argv[3]);
         if(releaseSem(semid, 0, 1, 2) == -1)
             err_exit("releaseSem inizializzazione atomo\n");
+        //fine inizializzazione
         if(reserveSem(semid, 1, 1, 2) == -1)
             err_exit("reserveSem simulazione atomo\n");
+        //inizio simulazione
     }
     identificazione(msgid); //si identifica sulla coda tramite mtype = 1
     pause(); //aspetta segnale SIGUSR1 di attivatores
@@ -127,6 +126,7 @@ int main(int argc, char **argv){
                 //aggiorno mem condivisa statistiche
                 scissioni[1].energia_prodotta += energia_scissione;
                 scissioni[1].scissioni++;
+                //blocco tutti i segnali tranne SIGTERM per mandare messaggio sulla codaß
                 sigset_t new, old;
                 sigfillset(&new); 
                 sigdelset(&new, SIGTERM);

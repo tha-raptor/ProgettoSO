@@ -13,10 +13,10 @@
 
 #include "libscissione.h"
 
-#define SOGLIA_PERICOLOSA 50 //percentuale (inib)
+#define SOGLIA_PERICOLOSA 40 //percentuale (inib)
 #define MSG_SIZE_IDENT 128
 #define STEP_ALIMENTAZIONE 900000000
-#define STEP_ATTIVATORE 100000 //
+#define STEP_ATTIVATORE 900000 //
 #define MIN_N_ATOMICO 10
 #define N_ATOM_MAX 30
 
